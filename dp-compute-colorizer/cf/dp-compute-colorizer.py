@@ -13,7 +13,6 @@ import yandex.cloud.compute.v1.instance_service_pb2_grpc as instance_service_grp
 import google.protobuf.field_mask_pb2 as field_mask_pb;
 import yandexcloud
 
-YC_FOLDER_ID = os.getenv("YC_FOLDER_ID")
 USER_AGENT = 'ycloud-python-sdk:dataproc.compute_colorizer'
 PAGE_SIZE = 100
 
@@ -65,12 +64,12 @@ def processCluster(sdk, cluster):
         if len(resp.subclusters) < PAGE_SIZE:
             break
 
-def run(sdk):
+def run(sdk, yc_folder_id):
     clusterService = sdk.client(cluster_service_grpc_pb.ClusterServiceStub)
     pageToken = None
     while True:
         req = cluster_service_pb.ListClustersRequest(
-            folder_id=YC_FOLDER_ID, page_size=PAGE_SIZE, page_token=pageToken)
+            folder_id=yc_folder_id, page_size=PAGE_SIZE, page_token=pageToken)
         resp = clusterService.List(req)
         for cluster in resp.clusters:
             processCluster(sdk, cluster)
@@ -78,8 +77,14 @@ def run(sdk):
         if len(resp.clusters) < PAGE_SIZE:
             break
 
+def handler(event, context):
+    sdk = yandexcloud.SDK(user_agent=USER_AGENT)
+    yc_folder_id = event.messages.event_metadata.folder_id
+    run(sdk, yc_folder_id)
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    with open("dataproc-binder-key.json") as infile:
+    with open("dp-compute-colorizer-key.json") as infile:
         sdk = yandexcloud.SDK(service_account_key=json.load(infile), user_agent=USER_AGENT)
-    run(sdk)
+    yc_folder_id = os.getenv("YC_FOLDER_ID")
+    run(sdk, yc_folder_id)
