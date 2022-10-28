@@ -2,5 +2,6 @@
 
 all: dp-compute-colorizer.zip
 
-dp-compute-colorizer.zip: requirements.txt dp-compute-colorizer.py
+dp-compute-colorizer.zip: requirements.txt cfunc.py
+	rm -f $@
 	zip -9 $@ $^
