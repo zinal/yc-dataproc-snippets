@@ -78,8 +78,9 @@ def run(sdk, yc_folder_id):
             break
 
 def handler(event, context):
+    logging.basicConfig(level=logging.INFO)
     sdk = yandexcloud.SDK(user_agent=USER_AGENT)
-    yc_folder_id = event.messages.event_metadata.folder_id
+    yc_folder_id = event["messages"][0]["event_metadata"]["folder_id"]
     run(sdk, yc_folder_id)
 
 if __name__ == '__main__':

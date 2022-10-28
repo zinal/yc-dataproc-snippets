@@ -1,10 +1,6 @@
 #! /bin/sh
 
-# Default folder as configured in the default profile
-yc_profile=`yc config profile list | grep -E 'ACTIVE$' | (read x y && echo $x)`
-yc_folder=`yc config profile get ${yc_profile} | grep -E '^folder-id: ' | (read x y && echo $y)`
-sa_name=dp-compute-colorizer
-cf_name=dp-compute-colorizer
+. options.sh
 
 # Service account with the required permissions
 yc iam service-account create --name ${sa_name}
@@ -29,7 +25,6 @@ yc serverless function version create \
   --execution-timeout 20s \
   --service-account-id ${sa_id} \
   --source-path cf/dp-compute-colorizer.zip
-
 
 yc serverless trigger create timer \
   --name ${cf_name} \
