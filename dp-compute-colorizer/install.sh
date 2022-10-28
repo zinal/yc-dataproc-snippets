@@ -1,5 +1,7 @@
 #! /bin/sh
 
+(cd cf && make)
+
 . options.sh
 
 # Service account with the required permissions
