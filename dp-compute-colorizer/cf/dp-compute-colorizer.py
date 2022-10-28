@@ -8,6 +8,9 @@ import yandex.cloud.dataproc.v1.subcluster_service_pb2 as subcluster_service_pb
 import yandex.cloud.dataproc.v1.subcluster_service_pb2_grpc as subcluster_service_grpc_pb
 import yandex.cloud.compute.v1.instancegroup.instance_group_service_pb2 as instance_group_service_pb
 import yandex.cloud.compute.v1.instancegroup.instance_group_service_pb2_grpc as instance_group_service_grpc_pb
+import yandex.cloud.compute.v1.instance_service_pb2 as instance_service_pb;
+import yandex.cloud.compute.v1.instance_service_pb2_grpc as instance_service_grpc_pb;
+import google.protobuf.field_mask_pb2 as field_mask_pb;
 import yandexcloud
 
 YC_FOLDER_ID = os.getenv("YC_FOLDER_ID")
@@ -15,10 +18,21 @@ USER_AGENT = 'ycloud-python-sdk:dataproc.compute_colorizer'
 PAGE_SIZE = 100
 
 def processInstance(sdk, clusterId, instanceId):
-    logging.info('Processing instance {} for cluster {}'.format(instanceId, clusterId))
+    logging.debug('Processing instance {} for cluster {}'.format(instanceId, clusterId))
+    instService = sdk.client(instance_service_grpc_pb.InstanceServiceStub)
+    reqGet = instance_service_pb.GetInstanceRequest(instance_id=instanceId)
+    respGet = instService.Get(reqGet)
+    if not ("cluster_id" in respGet.labels):
+        logging.info('Adding cluster id label {} to instance {}'.format(clusterId, respGet.id))
+        newLabels = dict(respGet.labels)
+        newLabels["cluster_id"] = clusterId
+        updateMask = field_mask_pb.FieldMask(paths=["labels"])
+        reqPut = instance_service_pb.UpdateInstanceRequest(
+            instance_id=respGet.id, update_mask=updateMask, labels=newLabels)
+        respPut = instService.Update(reqPut)
 
 def processInstanceGroup(sdk, clusterId, groupId):
-    logging.info('Processing instance group {} for cluster {}'.format(groupId, clusterId))
+    logging.debug('Processing instance group {} for cluster {}'.format(groupId, clusterId))
     igService = sdk.client(instance_group_service_grpc_pb.InstanceGroupServiceStub)
     pageToken = None
     while True:
@@ -33,12 +47,12 @@ def processInstanceGroup(sdk, clusterId, groupId):
 
 def processSubcluster(sdk, subcluster):
     if subcluster.instance_group_id == None or len(subcluster.instance_group_id) == 0:
-        logging.info('Skipping subcluster {}'.format(subcluster.id))
+        logging.debug('Skipping subcluster {}'.format(subcluster.id))
     else:
         processInstanceGroup(sdk, subcluster.cluster_id, subcluster.instance_group_id)
 
 def processCluster(sdk, cluster):
-    logging.info('Processing cluster {}'.format(cluster.id))
+    logging.debug('Processing cluster {}'.format(cluster.id))
     subclusterService = sdk.client(subcluster_service_grpc_pb.SubclusterServiceStub)
     pageToken = None
     while True:
@@ -66,6 +80,6 @@ def run(sdk):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    with open("../keys/dataproc-binder-key.json") as infile:
+    with open("dataproc-binder-key.json") as infile:
         sdk = yandexcloud.SDK(service_account_key=json.load(infile), user_agent=USER_AGENT)
     run(sdk)
