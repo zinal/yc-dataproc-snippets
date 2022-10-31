@@ -78,13 +78,13 @@ def run(sdk, yc_folder_id):
             break
 
 def handler(event, context):
-    logging.basicConfig(level=logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
     sdk = yandexcloud.SDK(user_agent=USER_AGENT)
     yc_folder_id = event["messages"][0]["event_metadata"]["folder_id"]
     run(sdk, yc_folder_id)
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     with open("dp-compute-colorizer-key.json") as infile:
         sdk = yandexcloud.SDK(service_account_key=json.load(infile), user_agent=USER_AGENT)
     yc_folder_id = os.getenv("YC_FOLDER_ID")
