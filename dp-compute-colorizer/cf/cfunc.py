@@ -13,7 +13,6 @@ import yandex.cloud.compute.v1.instancegroup.instance_group_service_pb2 as insta
 import yandex.cloud.compute.v1.instancegroup.instance_group_service_pb2_grpc as instance_group_service_grpc_pb
 import yandex.cloud.compute.v1.instance_service_pb2 as instance_service_pb;
 import yandex.cloud.compute.v1.instance_service_pb2_grpc as instance_service_grpc_pb;
-import google.protobuf.field_mask_pb2 as field_mask_pb;
 import yandexcloud
 import ydb
 
@@ -166,7 +165,7 @@ def processCluster(ctx: WorkContext, cluster):
         if len(resp.subclusters) < PAGE_SIZE:
             break
 
-def run(ctx: WorkContext, yc_folder_id: str):
+def runCtx(ctx: WorkContext):
     clusterService = ctx.sdk.client(cluster_service_grpc_pb.ClusterServiceStub)
     pageToken = None
     while True:
@@ -178,16 +177,35 @@ def run(ctx: WorkContext, yc_folder_id: str):
         pageToken = resp.next_page_token
         if len(resp.clusters) < PAGE_SIZE:
             break
+    # Flush the remaining records to YDB table
+    appendItem(ctx, None)
+
+def run(sdk: yandexcloud.SDK, yc_folder_id: str):
+    ydb_endpoint = os.getenv("YDB_ENDPOINT")
+    ydb_database = os.getenv("YDB_DATABASE")
+    ydb_path = os.getenv("YDB_PATH")
+    with ydb.Driver(endpoint=ydb_endpoint, database=ydb_database) as driver:
+        driver.wait(timeout=5, fail_fast=True)
+        with ydb.SessionPool(driver) as pool:
+            runCtx(WorkContext(sdk, pool, yc_folder_id, ydb_database, ydb_path))
 
 def handler(event, context):
     logging.getLogger().setLevel(logging.INFO)
+    yc_folder_id = os.getenv("YC_FOLDER_ID")
+    if yc_folder_id is None or len(yc_folder_id)==0:
+        yc_folder_id = event["messages"][0]["event_metadata"]["folder_id"]
     sdk = yandexcloud.SDK(user_agent=USER_AGENT)
-    yc_folder_id = event["messages"][0]["event_metadata"]["folder_id"]
     run(sdk, yc_folder_id)
 
+# export YC_PROFILE=`yc config profile list | grep -E 'ACTIVE$' | (read x y && echo $x)`
+# export YC_FOLDER_ID=`yc config profile get ${YC_PROFILE} | grep -E '^folder-id: ' | (read x y && echo $y)`
+# export YDB_PATH=billing1
+# export YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135
+# export YDB_DATABASE=/ru-central1/b1g1hfek2luako6vouqb/etno6m1l1lf4ae3j01ej
+# export YDB_SERVICE_ACCOUNT_KEY_FILE_CREDENTIALS=keys/key-dp-compute-colorizer.json
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
+    yc_folder_id = os.getenv("YC_FOLDER_ID")
     with open("dp-compute-colorizer-key.json") as infile:
         sdk = yandexcloud.SDK(service_account_key=json.load(infile), user_agent=USER_AGENT)
-    yc_folder_id = os.getenv("YC_FOLDER_ID")
     run(sdk, yc_folder_id)

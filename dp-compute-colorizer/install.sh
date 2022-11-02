@@ -8,7 +8,7 @@
 yc iam service-account create --name ${sa_name}
 yc resource-manager folder add-access-binding --role viewer \
    --id ${yc_folder} --service-account-name ${sa_name}
-yc resource-manager folder add-access-binding --role compute.admin \
+yc resource-manager folder add-access-binding --role ydb.editor \
    --id ${yc_folder} --service-account-name ${sa_name}
 yc resource-manager folder add-access-binding --role serverless.functions.invoker \
    --id ${yc_folder} --service-account-name ${sa_name}
