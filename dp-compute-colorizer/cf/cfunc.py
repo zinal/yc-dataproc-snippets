@@ -2,7 +2,8 @@ import os
 import json
 import logging
 import traceback
-from datetime import date, datetime
+import time
+from datetime import datetime
 from zoneinfo import ZoneInfo
 import yandex.cloud.dataproc.v1.cluster_pb2 as cluster_pb
 import yandex.cloud.dataproc.v1.cluster_service_pb2 as cluster_service_pb
@@ -21,19 +22,20 @@ PAGE_SIZE = 100
 MAX_RECORDS = 1000
 
 class ItemRecord(object):
-    __slots__ = ("obj_id", "vm_id", "cluster_id", "crdate", "otype")
+    __slots__ = ("updated_at", "crdate", "obj_id", "vm_id", "cluster_id", "otype")
 
-    def __init__(self, obj_id: str, vm_id: str, cluster_id: str, crdate: int, otype: str) -> None:
+    def __init__(self, updated_at: int, crdate: int, obj_id: str, vm_id: str, cluster_id: str, otype: str) -> None:
         self.obj_id = obj_id
+        self.updated_at = updated_at
+        self.crdate = crdate
         self.vm_id = vm_id
         self.cluster_id = cluster_id
-        self.crdate = crdate
         self.otype = otype
 
 class WorkContext(object):
     __slots__ = ("sdk", "pool", 
                 "folder_id", "dbpath", "table_prefix", 
-                "cur_date", "cur_items")
+                "cur_date", "cur_items", "cur_tv")
 
     def __init__(self,
         sdk: yandexcloud.SDK, pool: ydb.SessionPool, 
@@ -44,8 +46,12 @@ class WorkContext(object):
         self.folder_id = folder_id
         self.dbpath = dbpath
         self.table_prefix = table_prefix
-        xdate = datetime.now(ZoneInfo('Europe/Moscow')).date()
+        # YC Billing treats dates in Moscow time
+        xtv = datetime.now(ZoneInfo('Europe/Moscow'))
+        xdate = xtv.date()
+        # Integer "dates" in YYYYMMDD format
         self.cur_date = (xdate.year * 10000) + (xdate.month * 100) + xdate.day
+        self.cur_tv = int(time.time() * 10000000)
         self.cur_items = list()
 
 def ydbDirExists(driver, path):
@@ -78,6 +84,7 @@ def createTables(ctx: WorkContext):
                     vm_id Utf8,
                     cluster_id Utf8,
                     otype Utf8,
+                    updated_at Int64,
                     PRIMARY KEY(obj_id, crdate)
                 )
                 """.format(ctx.table_prefix)
@@ -92,8 +99,9 @@ def saveItems(ctx: WorkContext, items: list):
             crdate: Int32,
             vm_id: Utf8,
             cluster_id: Utf8,
-            otype: Utf8>>;
-        REPLACE INTO `{}/item_ref` SELECT * FROM AS_TABLE($input);
+            otype: Utf8,
+            updated_at: Int64>>;
+        UPSERT INTO `{}/item_ref` SELECT * FROM AS_TABLE($input);
         """.format(ctx.table_prefix)
         qp = session.prepare(query)
         session.transaction(ydb.SerializableReadWrite()).execute(
@@ -112,13 +120,13 @@ def appendItem(ctx: WorkContext, item: ItemRecord):
         saveItems(ctx, ctx.cur_items)
 
 def appendVm(ctx: WorkContext, clusterId: str, instanceId: str):
-    appendItem(ctx, ItemRecord(instanceId, instanceId, clusterId, ctx.cur_date, "vm"))
+    appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, instanceId, instanceId, clusterId, "vm"))
 
 def appendDisk(ctx: WorkContext, clusterId: str, instanceId: str, diskId: str):
-    appendItem(ctx, ItemRecord(diskId, instanceId, clusterId, ctx.cur_date, "disk"))
+    appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, diskId, instanceId, clusterId, "disk"))
 
 def appendNfs(ctx: WorkContext, clusterId: str, instanceId: str, nfsId: str):
-    appendItem(ctx, ItemRecord(nfsId, instanceId, clusterId, ctx.cur_date, "nfs"))
+    appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, nfsId, instanceId, clusterId, "nfs"))
 
 def processInstance(ctx: WorkContext, clusterId: str, instanceId: str):
     logging.debug('Processing instance {} for cluster {}'.format(instanceId, clusterId))
