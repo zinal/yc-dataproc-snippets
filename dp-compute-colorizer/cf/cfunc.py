@@ -23,11 +23,11 @@ MAX_RECORDS = 1000
 class ItemRecord(object):
     __slots__ = ("obj_id", "vm_id", "cluster_id", "crdate", "otype")
 
-    def __init__(self, obj_id: str, vm_id: str, cluster_id: str, crdate: date, otype: str) -> None:
+    def __init__(self, obj_id: str, vm_id: str, cluster_id: str, crdate: int, otype: str) -> None:
         self.obj_id = obj_id
         self.vm_id = vm_id
         self.cluster_id = cluster_id
-        self.crtime = crdate
+        self.crdate = crdate
         self.otype = otype
 
 class WorkContext(object):
@@ -44,8 +44,15 @@ class WorkContext(object):
         self.folder_id = folder_id
         self.dbpath = dbpath
         self.table_prefix = table_prefix
-        self.cur_date = datetime.now(ZoneInfo('Europe/Moscow')).date()
+        xdate = datetime.now(ZoneInfo('Europe/Moscow')).date()
+        self.cur_date = (xdate.year * 10000) + (xdate.month * 100) + xdate.day
         self.cur_items = list()
+
+def ydbDirExists(driver, path):
+    try:
+        return driver.scheme_client.describe_path(path).is_directory()
+    except ydb.SchemeError:
+        return False
 
 def tableExistsSess(ctx: WorkContext, session: ydb.Session, tableName: str) -> bool:
     try:
@@ -62,14 +69,15 @@ def tableExists(ctx: WorkContext, tableName: str) -> bool:
 def createTables(ctx: WorkContext):
     def callee(session: ydb.Session):
         if not tableExistsSess(ctx, session, "item_ref"):
+            logging.info("Creating table {}/item_ref".format(ctx.table_prefix))
             session.execute_scheme(
                 """
                 CREATE TABLE `{}/item_ref`(
-                    obj_id String,
-                    crdate Date,
-                    vm_id String,
-                    cluster_id String,
-                    otype String,
+                    obj_id Utf8,
+                    crdate Int32,
+                    vm_id Utf8,
+                    cluster_id Utf8,
+                    otype Utf8,
                     PRIMARY KEY(obj_id, crdate)
                 )
                 """.format(ctx.table_prefix)
@@ -80,11 +88,11 @@ def saveItems(ctx: WorkContext, items: list):
     def callee(session: ydb.Session):
         query = """
         DECLARE $input AS List<Struct<
-            obj_id: String,
-            crdate: Date,
-            vm_id: String,
-            cluster_id: String,
-            otype: String>>;
+            obj_id: Utf8,
+            crdate: Int32,
+            vm_id: Utf8,
+            cluster_id: Utf8,
+            otype: Utf8>>;
         REPLACE INTO `{}/item_ref` SELECT * FROM AS_TABLE($input);
         """.format(ctx.table_prefix)
         qp = session.prepare(query)
@@ -166,6 +174,7 @@ def processCluster(ctx: WorkContext, cluster):
             break
 
 def runCtx(ctx: WorkContext):
+    createTables(ctx)
     clusterService = ctx.sdk.client(cluster_service_grpc_pb.ClusterServiceStub)
     pageToken = None
     while True:
@@ -182,10 +191,18 @@ def runCtx(ctx: WorkContext):
 
 def run(sdk: yandexcloud.SDK, yc_folder_id: str):
     ydb_endpoint = os.getenv("YDB_ENDPOINT")
+    if ydb_endpoint is None or len(ydb_endpoint)==0:
+        raise Exception("missing YDB_ENDPOINT env")
     ydb_database = os.getenv("YDB_DATABASE")
+    if ydb_database is None or len(ydb_database)==0:
+        raise Exception("missing YDB_DATABASE env")
     ydb_path = os.getenv("YDB_PATH")
+    if ydb_path is None or len(ydb_path)==0:
+        ydb_path = "dp-compute-colorizer"
     with ydb.Driver(endpoint=ydb_endpoint, database=ydb_database) as driver:
         driver.wait(timeout=5, fail_fast=True)
+        if not ydbDirExists(driver, ydb_database + "/" + ydb_path):
+            raise Exception("Target YDB directory does not exist", ydb_path)
         with ydb.SessionPool(driver) as pool:
             runCtx(WorkContext(sdk, pool, yc_folder_id, ydb_database, ydb_path))
 
@@ -206,6 +223,7 @@ def handler(event, context):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     yc_folder_id = os.getenv("YC_FOLDER_ID")
-    with open("dp-compute-colorizer-key.json") as infile:
+    yc_sa_key_filename = os.getenv("YDB_SERVICE_ACCOUNT_KEY_FILE_CREDENTIALS")
+    with open(yc_sa_key_filename) as infile:
         sdk = yandexcloud.SDK(service_account_key=json.load(infile), user_agent=USER_AGENT)
     run(sdk, yc_folder_id)
