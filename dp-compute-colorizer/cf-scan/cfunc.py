@@ -129,8 +129,8 @@ def appendDisk(ctx: WorkContext, clusterId: str, instanceId: str, diskId: str):
 def appendNfs(ctx: WorkContext, clusterId: str, instanceId: str, nfsId: str):
     appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, nfsId, instanceId, clusterId, "nfs"))
 
-def processInstance(ctx: WorkContext, clusterId: str, instanceId: str):
-    logging.debug('Processing instance {} for cluster {}'.format(instanceId, clusterId))
+def processHost(ctx: WorkContext, clusterId, instanceId):
+    logging.debug('Processing host {} for cluster {}'.format(instanceId, clusterId))
     appendVm(ctx, clusterId, instanceId)
     try:
         instService = ctx.sdk.client(instance_service_grpc_pb.InstanceServiceStub)
@@ -148,38 +148,17 @@ def processInstance(ctx: WorkContext, clusterId: str, instanceId: str):
             for f in respGet.filesystems:
                 appendNfs(ctx, clusterId, instanceId, f.filesystem_id)
 
-def processInstanceGroup(ctx: WorkContext, clusterId: str, groupId: str):
-    logging.debug('Processing instance group {} for cluster {}'.format(groupId, clusterId))
-    igService = ctx.sdk.client(instance_group_service_grpc_pb.InstanceGroupServiceStub)
-    pageToken = None
-    while True:
-        req = instance_group_service_pb.ListInstanceGroupInstancesRequest(
-            instance_group_id=groupId, page_size=PAGE_SIZE, page_token=pageToken)
-        resp = igService.ListInstances(req)
-        for instance in resp.instances:
-            processInstance(ctx, clusterId, instance.instance_id)
-        pageToken = resp.next_page_token
-        if len(resp.instances) < PAGE_SIZE:
-            break
-
-def processSubcluster(ctx: WorkContext, subcluster):
-    if subcluster.instance_group_id == None or len(subcluster.instance_group_id) == 0:
-        logging.debug('Skipping subcluster {}'.format(subcluster.id))
-    else:
-        processInstanceGroup(ctx, subcluster.cluster_id, subcluster.instance_group_id)
-
-def processCluster(ctx: WorkContext, cluster):
+def processCluster(ctx: WorkContext, clusterService, cluster):
     logging.debug('Processing cluster {}'.format(cluster.id))
-    subclusterService = ctx.sdk.client(subcluster_service_grpc_pb.SubclusterServiceStub)
     pageToken = None
     while True:
-        req = subcluster_service_pb.ListSubclustersRequest(
+        req = cluster_service_pb.ListClusterHostsRequest(
             cluster_id=cluster.id, page_size=PAGE_SIZE, page_token=pageToken)
-        resp = subclusterService.List(req)
-        for subcluster in resp.subclusters:
-            processSubcluster(ctx, subcluster)
+        resp = clusterService.ListHosts(req)
+        for host in resp.hosts:
+            processHost(ctx, cluster.id, host.compute_instance_id)
         pageToken = resp.next_page_token
-        if len(resp.subclusters) < PAGE_SIZE:
+        if len(resp.hosts) < PAGE_SIZE:
             break
 
 def runCtx(ctx: WorkContext):
@@ -191,7 +170,7 @@ def runCtx(ctx: WorkContext):
             folder_id=yc_folder_id, page_size=PAGE_SIZE, page_token=pageToken)
         resp = clusterService.List(req)
         for cluster in resp.clusters:
-            processCluster(ctx, cluster)
+            processCluster(ctx, clusterService, cluster)
         pageToken = resp.next_page_token
         if len(resp.clusters) < PAGE_SIZE:
             break
