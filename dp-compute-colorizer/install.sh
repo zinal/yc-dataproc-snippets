@@ -1,6 +1,6 @@
 #! /bin/sh
 
-(cd cf && make)
+(cd cf-scan && make)
 
 . options.sh
 
@@ -15,7 +15,7 @@ yc resource-manager folder add-access-binding --role serverless.functions.invoke
 
 sa_id=`yc iam service-account get ${sa_name} | grep -E '^id: ' | (read x y && echo $y)`
 
-#yc iam key create --service-account-name dataproc-colorizer --output dp-colorizer-key.json
+#yc iam key create --service-account-name dp-compute-colorizer --output keys/dp-compute-colorizer.json
 
 yc serverless function create --name=${cf_name}
 

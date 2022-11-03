@@ -22,11 +22,11 @@ PAGE_SIZE = 100
 MAX_RECORDS = 1000
 
 class ItemRecord(object):
-    __slots__ = ("updated_at", "crdate", "obj_id", "vm_id", "cluster_id", "otype")
+    __slots__ = ("crdate", "obj_id", "vm_id", "cluster_id", "otype", "upd_tv")
 
-    def __init__(self, updated_at: int, crdate: int, obj_id: str, vm_id: str, cluster_id: str, otype: str) -> None:
+    def __init__(self, upd_tv: int, crdate: int, obj_id: str, vm_id: str, cluster_id: str, otype: str) -> None:
         self.obj_id = obj_id
-        self.updated_at = updated_at
+        self.upd_tv = upd_tv
         self.crdate = crdate
         self.vm_id = vm_id
         self.cluster_id = cluster_id
@@ -84,8 +84,9 @@ def createTables(ctx: WorkContext):
                     vm_id Utf8,
                     cluster_id Utf8,
                     otype Utf8,
-                    updated_at Int64,
-                    PRIMARY KEY(obj_id, crdate)
+                    upd_tv Int64,
+                    sync_tv Int64,
+                    PRIMARY KEY(crdate, obj_id)
                 )
                 """.format(ctx.table_prefix)
             )
@@ -100,7 +101,7 @@ def saveItems(ctx: WorkContext, items: list):
             vm_id: Utf8,
             cluster_id: Utf8,
             otype: Utf8,
-            updated_at: Int64>>;
+            upd_tv: Int64>>;
         UPSERT INTO `{}/item_ref` SELECT * FROM AS_TABLE($input);
         """.format(ctx.table_prefix)
         qp = session.prepare(query)
@@ -216,6 +217,7 @@ def run(sdk: yandexcloud.SDK, yc_folder_id: str):
 
 def handler(event, context):
     logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger('ydb').setLevel(logging.WARNING)
     yc_folder_id = os.getenv("YC_FOLDER_ID")
     if yc_folder_id is None or len(yc_folder_id)==0:
         yc_folder_id = event["messages"][0]["event_metadata"]["folder_id"]
@@ -227,9 +229,11 @@ def handler(event, context):
 # export YDB_PATH=billing1
 # export YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135
 # export YDB_DATABASE=/ru-central1/b1g1hfek2luako6vouqb/etno6m1l1lf4ae3j01ej
-# export YDB_SERVICE_ACCOUNT_KEY_FILE_CREDENTIALS=keys/key-dp-compute-colorizer.json
+# export YDB_SERVICE_ACCOUNT_KEY_FILE_CREDENTIALS=keys/dp-compute-colorizer.json
+# python3 cf/cfunc.py
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger('ydb').setLevel(logging.WARNING)
     yc_folder_id = os.getenv("YC_FOLDER_ID")
     yc_sa_key_filename = os.getenv("YDB_SERVICE_ACCOUNT_KEY_FILE_CREDENTIALS")
     with open(yc_sa_key_filename) as infile:
