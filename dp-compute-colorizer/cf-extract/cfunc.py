@@ -47,6 +47,7 @@ def tableExists(ctx: WorkContext, tableName: str) -> bool:
 def runCtx(ctx: WorkContext):
     if not tableExists(ctx, "item_ref"):
         raise Exception("YDB table does not exist: item_ref")
+    logging.debug("Extraction on {} and {} started".format(ctx.cur_date, ctx.prev_date))
 
 def run():
     ydb_endpoint = os.getenv("YDB_ENDPOINT")

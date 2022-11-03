@@ -22,18 +22,16 @@ PAGE_SIZE = 100
 MAX_RECORDS = 1000
 
 class ItemRecord(object):
-    __slots__ = ("crdate", "obj_id", "vm_id", "cluster_id", "otype", "upd_tv")
+    __slots__ = ("obj_id", "vm_id", "cluster_id", "otype")
 
-    def __init__(self, upd_tv: int, crdate: int, obj_id: str, vm_id: str, cluster_id: str, otype: str) -> None:
+    def __init__(self, obj_id: str, vm_id: str, cluster_id: str, otype: str) -> None:
         self.obj_id = obj_id
-        self.upd_tv = upd_tv
-        self.crdate = crdate
         self.vm_id = vm_id
         self.cluster_id = cluster_id
         self.otype = otype
 
     def __str__(self):
-        return "ItemRecord {crdate: " + str(self.crdate) + ", obj_id: " + self.obj_id + ", cluster_id: " + self.cluster_id + "}"
+        return "ItemRecord {obj_id: " + self.obj_id + ", cluster_id: " + self.cluster_id + "}"
 
 class WorkContext(object):
     __slots__ = ("sdk", "pool", 
@@ -58,6 +56,23 @@ class WorkContext(object):
         self.cur_date = (xdate.year * 10000) + (xdate.month * 100) + xdate.day
         self.cur_tv = int(time.time() * 10000000)
         self.cur_items = list()
+
+def appendItem(ctx: WorkContext, item: ItemRecord):
+    if item is not None:
+        logging.debug('*** Adding {}'.format(item))
+        ctx.cur_items.append(item)
+    if len(ctx.cur_items) >= MAX_RECORDS or item is None:
+        logging.debug('*** Saving items, total {}'.format(len(ctx.cur_items)))
+        saveItems(ctx, ctx.cur_items)
+
+def appendVm(ctx: WorkContext, clusterId: str, instanceId: str):
+    appendItem(ctx, ItemRecord(instanceId, instanceId, clusterId, "vm"))
+
+def appendDisk(ctx: WorkContext, clusterId: str, instanceId: str, diskId: str):
+    appendItem(ctx, ItemRecord(diskId, instanceId, clusterId, "disk"))
+
+def appendNfs(ctx: WorkContext, clusterId: str, instanceId: str, nfsId: str):
+    appendItem(ctx, ItemRecord(nfsId, instanceId, clusterId, "nfs"))
 
 def ydbDirExists(driver, path):
     try:
@@ -84,57 +99,65 @@ def createTables(ctx: WorkContext):
             session.execute_scheme(
                 """
                 CREATE TABLE `{}/item_ref`(
-                    obj_id Utf8,
                     crdate Int32,
+                    obj_id Utf8,
                     vm_id Utf8,
                     cluster_id Utf8,
                     otype Utf8,
                     upd_tv Int64,
-                    sync_tv Int64,
                     PRIMARY KEY(crdate, obj_id)
+                )
+                """.format(ctx.table_prefix)
+            )
+        if not tableExistsSess(ctx, session, "item_xtr"):
+            logging.info("Creating table {}/item_xtr".format(ctx.table_prefix))
+            session.execute_scheme(
+                """
+                CREATE TABLE `{}/item_xtr`(
+                    crdate Int32,
+                    upd_tv Int64,
+                    PRIMARY KEY(crdate)
                 )
                 """.format(ctx.table_prefix)
             )
     return ctx.pool.retry_operation_sync(callee)
 
 def saveItems(ctx: WorkContext, items: list):
-    def callee(session: ydb.Session):
-        query = """
+    query = """
+        DECLARE $crdate AS Int32;
+        DECLARE $upd_tv AS Int64;
         DECLARE $input AS List<Struct<
             obj_id: Utf8,
-            crdate: Int32,
             vm_id: Utf8,
             cluster_id: Utf8,
-            otype: Utf8,
-            upd_tv: Int64>>;
-        UPSERT INTO `{}/item_ref` SELECT * FROM AS_TABLE($input);
-        """.format(ctx.table_prefix)
+            otype: Utf8>>;
+        UPSERT INTO `{}/item_ref`
+        SELECT i.* FROM (
+            SELECT obj_id, vm_id, cluster_id, otype,
+                    $crdate AS crdate, $upd_tv AS upd_tv
+            FROM AS_TABLE($input)) i
+        LEFT JOIN `{}/item_ref` r
+        ON r.crdate=i.crdate AND r.obj_id=i.obj_id
+        WHERE (r.crdate IS NULL)
+            OR (COALESCE(r.vm_id,'-') <> i.vm_id)
+            OR (COALESCE(r.cluster_id,'-') <> i.cluster_id)
+            OR (COALESCE(r.otype,'-') <> i.otype);
+    """.format(ctx.table_prefix, ctx.table_prefix)
+    def callee(session: ydb.Session):
         qp = session.prepare(query)
         session.transaction(ydb.SerializableReadWrite()).execute(
-            qp, { "$input": items }, commit_tx=True,
-        )
+            qp, 
+            { 
+                "$crdate": ctx.cur_date,
+                "$upd_tv": ctx.cur_tv,
+                "$input": items,
+            },
+            commit_tx=True, )
     if len(items) > 0:
         retval = ctx.pool.retry_operation_sync(callee)
         items.clear()
         return retval
     return None
-
-def appendItem(ctx: WorkContext, item: ItemRecord):
-    if item is not None:
-        logging.debug('*** Adding {}'.format(item))
-        ctx.cur_items.append(item)
-    if len(ctx.cur_items) >= MAX_RECORDS or item is None:
-        logging.debug('*** Saving items, total {}'.format(len(ctx.cur_items)))
-        saveItems(ctx, ctx.cur_items)
-
-def appendVm(ctx: WorkContext, clusterId: str, instanceId: str):
-    appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, instanceId, instanceId, clusterId, "vm"))
-
-def appendDisk(ctx: WorkContext, clusterId: str, instanceId: str, diskId: str):
-    appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, diskId, instanceId, clusterId, "disk"))
-
-def appendNfs(ctx: WorkContext, clusterId: str, instanceId: str, nfsId: str):
-    appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, nfsId, instanceId, clusterId, "nfs"))
 
 def processHost(ctx: WorkContext, clusterId, instanceId):
     appendVm(ctx, clusterId, instanceId)
