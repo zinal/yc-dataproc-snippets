@@ -10,20 +10,12 @@ import ydb
 class WorkContext(object):
     __slots__ = ("pool", 
                 "dbpath", "table_prefix",
-                "inst_service",
-                "cur_date", "prev_date", "cur_tv")
+                "cur_tv")
 
     def __init__(self, pool: ydb.SessionPool, dbpath: str, table_prefix: str) -> None:
         self.pool = pool
         self.dbpath = dbpath
         self.table_prefix = table_prefix
-        # YC Billing treats dates in Moscow time
-        xtv = datetime.now(ZoneInfo('Europe/Moscow'))
-        xdate1 = xtv.date()
-        xdate2 = (xtv - timedelta(days=1)).date()
-        # Integer "dates" in YYYYMMDD format
-        self.cur_date = (xdate1.year * 10000) + (xdate1.month * 100) + xdate1.day
-        self.prev_date = (xdate2.year * 10000) + (xdate2.month * 100) + xdate2.day
         self.cur_tv = int(time.time() * 10000000)
 
 def ydbDirExists(driver, path):
@@ -44,10 +36,81 @@ def tableExists(ctx: WorkContext, tableName: str) -> bool:
         return tableExistsSess(ctx, session, tableName)
     return ctx.pool.retry_operation_sync(callee)
 
+def needExtract(ctx: WorkContext, dt: int):
+    def callee(session: ydb.Session):
+        qtext = """
+            DECLARE $crdate AS Int32;
+            SELECT upd_tv FROM `{}/item_xtr` WHERE crdate=$crdate;
+        """.format(ctx.table_prefix)
+        qp = session.prepare(qtext)
+        rs = session.transaction().execute(qp, {"$crdate" : dt})
+        if (rs is None or len(rs)==0 or rs[0].rows is None or len(rs[0].rows)==0):
+            upd_tv = 0
+        else:
+            upd_tv = rs[0].rows[0].upd_tv
+        qtext = """
+            DECLARE $crdate AS Int32;
+            DECLARE $upd_tv AS Int64;
+            SELECT COUNT(*) AS cnt FROM `{}/item_ref`
+            WHERE crdate=$crdate AND upd_tv >= $upd_tv;
+        """.format(ctx.table_prefix)
+        qp = session.prepare(qtext)
+        rs = session.transaction().execute(qp, {"$crdate" : dt, "$upd_tv": upd_tv})
+        if (rs is None or len(rs)==0 or rs[0].rows is None or len(rs[0].rows)==0):
+            return False
+        return rs[0].rows[0].cnt > 0
+    return ctx.pool.retry_operation_sync(callee)
+
+def runExtract(ctx: WorkContext, dt: int):
+    logging.debug("*** Extraction for date {}".format(dt))
+    qtext = """
+        DECLARE $crdate AS Int32;
+        DECLARE $obj_id AS Utf8;
+        DECLARE $limit AS Int32;
+        SELECT obj_id, vm_id, cluster_id, otype, upd_tv FROM `{}/item_ref`
+        WHERE crdate=$crdate AND obj_id > $obj_id
+        ORDER BY obj_id
+        LIMIT $limit;
+    """.format(ctx.table_prefix)
+    cur_obj_id = ''
+    def callee(session: ydb.Session):
+        nonlocal cur_obj_id
+        logging.debug("*** Iteration for date {} obj_id {}".format(dt, cur_obj_id))
+        qp = session.prepare(qtext)
+        rs = session.transaction().execute(
+            qp, 
+            {
+                "$crdate" : dt, 
+                "$obj_id": cur_obj_id,
+                "$limit": 100
+            }
+        )
+        if not rs[0].rows:
+            return False
+        for row in rs[0].rows:
+            cur_obj_id = row.obj_id
+            logging.debug("{} {} {} {} {}".format(cur_obj_id, row.vm_id, row.cluster_id, row.otype, row.upd_tv))
+        return True
+    while True:
+        if not ctx.pool.retry_operation_sync(callee):
+            break
+
 def runCtx(ctx: WorkContext):
     if not tableExists(ctx, "item_ref"):
         raise Exception("YDB table does not exist: item_ref")
-    logging.debug("Extraction on {} and {} started".format(ctx.cur_date, ctx.prev_date))
+    if not tableExists(ctx, "item_xtr"):
+        raise Exception("YDB table does not exist: item_xtr")
+    # YC Billing treats dates in Moscow time
+    xtv = datetime.now(ZoneInfo('Europe/Moscow'))
+    xcur = xtv.date()
+    xprev = (xtv - timedelta(days=1)).date()
+    # Integer "dates" in YYYYMMDD format
+    cur_date = (xcur.year * 10000) + (xcur.month * 100) + xcur.day
+    prev_date = (xprev.year * 10000) + (xprev.month * 100) + xprev.day
+    if needExtract(ctx, cur_date):
+        runExtract(ctx, cur_date)
+    if needExtract(ctx, prev_date):
+        runExtract(ctx, prev_date)
 
 def run():
     ydb_endpoint = os.getenv("YDB_ENDPOINT")
