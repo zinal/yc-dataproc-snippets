@@ -32,9 +32,13 @@ class ItemRecord(object):
         self.cluster_id = cluster_id
         self.otype = otype
 
+    def __str__(self):
+        return "ItemRecord {crdate: " + str(self.crdate) + ", obj_id: " + self.obj_id + ", cluster_id: " + self.cluster_id + "}"
+
 class WorkContext(object):
     __slots__ = ("sdk", "pool", 
-                "folder_id", "dbpath", "table_prefix", 
+                "folder_id", "dbpath", "table_prefix",
+                "inst_service",
                 "cur_date", "cur_items", "cur_tv")
 
     def __init__(self,
@@ -46,6 +50,7 @@ class WorkContext(object):
         self.folder_id = folder_id
         self.dbpath = dbpath
         self.table_prefix = table_prefix
+        self.inst_service = None
         # YC Billing treats dates in Moscow time
         xtv = datetime.now(ZoneInfo('Europe/Moscow'))
         xdate = xtv.date()
@@ -116,8 +121,10 @@ def saveItems(ctx: WorkContext, items: list):
 
 def appendItem(ctx: WorkContext, item: ItemRecord):
     if item is not None:
+        logging.debug('*** Adding {}'.format(item))
         ctx.cur_items.append(item)
     if len(ctx.cur_items) >= MAX_RECORDS or item is None:
+        logging.debug('*** Saving items, total {}'.format(len(ctx.cur_items)))
         saveItems(ctx, ctx.cur_items)
 
 def appendVm(ctx: WorkContext, clusterId: str, instanceId: str):
@@ -130,14 +137,15 @@ def appendNfs(ctx: WorkContext, clusterId: str, instanceId: str, nfsId: str):
     appendItem(ctx, ItemRecord(ctx.cur_tv, ctx.cur_date, nfsId, instanceId, clusterId, "nfs"))
 
 def processHost(ctx: WorkContext, clusterId, instanceId):
-    logging.debug('Processing host {} for cluster {}'.format(instanceId, clusterId))
     appendVm(ctx, clusterId, instanceId)
     try:
-        instService = ctx.sdk.client(instance_service_grpc_pb.InstanceServiceStub)
+        if ctx.inst_service is None:
+            ctx.inst_service = ctx.sdk.client(instance_service_grpc_pb.InstanceServiceStub)
         reqGet = instance_service_pb.GetInstanceRequest(instance_id=instanceId)
-        respGet = instService.Get(reqGet)
+        respGet = ctx.inst_service.Get(reqGet)
     except Exception as e:
         logging.error(traceback.format_exc())
+        respGet = None
     if respGet is not None:
         if respGet.boot_disk is not None:
             appendDisk(ctx, clusterId, instanceId, respGet.boot_disk.disk_id)
@@ -149,14 +157,17 @@ def processHost(ctx: WorkContext, clusterId, instanceId):
                 appendNfs(ctx, clusterId, instanceId, f.filesystem_id)
 
 def processCluster(ctx: WorkContext, clusterService, cluster):
-    logging.debug('Processing cluster {}'.format(cluster.id))
     pageToken = None
     while True:
         req = cluster_service_pb.ListClusterHostsRequest(
             cluster_id=cluster.id, page_size=PAGE_SIZE, page_token=pageToken)
         resp = clusterService.ListHosts(req)
         for host in resp.hosts:
-            processHost(ctx, cluster.id, host.compute_instance_id)
+            logging.debug('*** Processing host {} for cluster {}'.format(host.compute_instance_id, cluster.id))
+            try:
+                processHost(ctx, cluster.id, host.compute_instance_id)
+            except Exception as e:
+                logging.error(traceback.format_exc())
         pageToken = resp.next_page_token
         if len(resp.hosts) < PAGE_SIZE:
             break
@@ -170,6 +181,7 @@ def runCtx(ctx: WorkContext):
             folder_id=yc_folder_id, page_size=PAGE_SIZE, page_token=pageToken)
         resp = clusterService.List(req)
         for cluster in resp.clusters:
+            logging.debug('*** Processing cluster {}'.format(cluster.id))
             processCluster(ctx, clusterService, cluster)
         pageToken = resp.next_page_token
         if len(resp.clusters) < PAGE_SIZE:
