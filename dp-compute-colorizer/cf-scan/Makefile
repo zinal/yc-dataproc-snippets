@@ -1,7 +1,7 @@
 .PHONY: all
 
-all: dp-compute-colorizer.zip
+all: dp-compute-scan.zip
 
-dp-compute-colorizer.zip: requirements.txt cfunc.py
+dp-compute-scan.zip: requirements.txt cfunc.py
 	rm -f $@
 	zip -9 $@ $^

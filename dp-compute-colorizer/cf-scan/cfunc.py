@@ -221,7 +221,7 @@ def handler(event, context):
 # export YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135
 # export YDB_DATABASE=/ru-central1/b1g1hfek2luako6vouqb/etno6m1l1lf4ae3j01ej
 # export YDB_SERVICE_ACCOUNT_KEY_FILE_CREDENTIALS=keys/dp-compute-colorizer.json
-# python3 cf/cfunc.py
+# python3 cf-scan/cfunc.py
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger('ydb').setLevel(logging.WARNING)
