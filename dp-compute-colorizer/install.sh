@@ -1,6 +1,7 @@
 #! /bin/sh
 
 (cd cf-scan && make)
+(cd cf-extract && make)
 
 . options.sh
 
@@ -17,21 +18,39 @@ sa_id=`yc iam service-account get ${sa_name} | grep -E '^id: ' | (read x y && ec
 
 #yc iam key create --service-account-name dp-compute-colorizer --output keys/dp-compute-colorizer.json
 
-yc serverless function create --name=${cf_name}
+yc serverless function create --name=${cf_name}-scan
 
 yc serverless function version create \
-  --function-name=${cf_name} \
+  --function-name=${cf_name}-scan \
   --runtime python39 \
   --entrypoint cfunc.handler \
-  --memory 128m \
+  --memory 64m \
   --execution-timeout 20s \
   --service-account-id ${sa_id} \
-  --source-path cf/dp-compute-colorizer.zip
+  --source-path cf-scan/dp-compute-scan.zip
 
 yc serverless trigger create timer \
-  --name ${cf_name} \
+  --name ${cf_name}-scan \
   --cron-expression '* * * * ? *' \
-  --invoke-function-name ${cf_name} \
+  --invoke-function-name ${cf_name}-scan \
+  --invoke-function-service-account-id ${sa_id} \
+  --retry-attempts 0
+
+yc serverless function create --name=${cf_name}-xtr
+
+yc serverless function version create \
+  --function-name=${cf_name}-xtr \
+  --runtime python39 \
+  --entrypoint cfunc.handler \
+  --memory 64m \
+  --execution-timeout 20s \
+  --service-account-id ${sa_id} \
+  --source-path cf-extract/dp-compute-extract.zip
+
+yc serverless trigger create timer \
+  --name ${cf_name}-xtr \
+  --cron-expression '* * * * ? *' \
+  --invoke-function-name ${cf_name}-xtr \
   --invoke-function-service-account-id ${sa_id} \
   --retry-attempts 0
 
