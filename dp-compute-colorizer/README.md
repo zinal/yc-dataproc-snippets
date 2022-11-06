@@ -113,6 +113,7 @@ yc dataproc cluster add-labels --name <Кластер> --labels project_id=<Ме
 
 ```SQL
 SELECT
+    COALESCE(z.cluster_id, '-') AS cluster_id,
     COALESCE(y.project_id, '-') AS project_id,
     x.`cloud_name`,
     x.`folder_name`,
@@ -129,22 +130,30 @@ SELECT
     x.`volume_incentive_credit`,
     x.`cud_credit`,
     x.`misc_credit`,
-FROM bindings.`billing-billing1_billing1-detail/` AS x
+FROM bindings.billing_details AS x
+LEFT JOIN bindings.dp_cluster_dict AS z
+  ON z.dt=x.`date` AND z.obj_id=x.`resource_id`
 LEFT JOIN (
-SELECT DISTINCT
-    `date`,
-    `label.user_labels.cluster_id` AS cluster_id,
-    `label.user_labels.project_id` AS project_id
-FROM bindings.`billing-billing1_billing1-detail/`
-WHERE `label.user_labels.cluster_id` IS NOT NULL
-  AND `label.user_labels.cluster_id`<>''
-  AND `label.user_labels.project_id` IS NOT NULL
-  AND `label.user_labels.project_id`<>''
-  AND `date`>=Date('2022-10-01')
-  AND `date`<Date('2022-11-01')
+    SELECT DISTINCT
+        `date` AS dt,
+        `label.user_labels.cluster_id` AS cluster_id,
+        `label.user_labels.project_id` AS project_id
+    FROM bindings.billing_details
+    WHERE `label.user_labels.cluster_id` IS NOT NULL
+    AND `label.user_labels.cluster_id`<>''
+    AND `label.user_labels.project_id` IS NOT NULL
+    AND `label.user_labels.project_id`<>''
+    AND `date`>=Date('2022-11-05')
+    AND `date`<Date('2022-11-20')
 ) AS y
-ON y.cluster_id = x.`label.user_labels.cluster_id` AND y.`date`=x.`date`
-WHERE x.`date`>=Date('2022-10-01')
-  AND x.`date`<Date('2022-11-01')
+  ON y.dt=z.dt AND y.cluster_id=z.cluster_id
+WHERE x.`date`>=Date('2022-11-05')
+  AND x.`date`<Date('2022-11-20')
 ;
 ```
+
+В приведённом выше примере запроса предполагается, что:
+* привязка данных биллинга называется `billing_details`;
+* в привязке данных биллинга определены дополнительные колонки для меток `cluster_id` и `project_id`.
+
+Сопоставление ресурсов кластерам Data Proc в этом примере запроса выполняется через справочник `dp_cluster_dict`, а затем осуществляется привязка к идентификаторам бизнес-проектов, которая настроена через метки `project_id` на объекты кластеров Data Proc.
