@@ -118,9 +118,16 @@ def readUpdateLabels(ctx: WorkContext, dt: int):
         return stamp_prev, stamp_cur
     return ctx.pool.retry_operation_sync(callee)
 
+def formatDate(dt: int) -> str:
+    dt_year = dt // 10000
+    dt_month = (dt - dt_year*10000) // 100
+    dt_day = dt - dt_year*10000 - dt_month*100
+    return str(dt_year) + "-" + str(dt_month).zfill(2) + "-" + str(dt_day).zfill(2)
+
 # Extract the dictionary data to the temporary file
 def runExtract(ctx: WorkContext, dt: int, fout: io.TextIOWrapper):
     logging.debug("*** Extraction for date {}".format(dt))
+    dtstr = formatDate(dt)
     qtext = """
         DECLARE $crdate AS Int32;
         DECLARE $obj_id AS Utf8;
@@ -147,7 +154,7 @@ def runExtract(ctx: WorkContext, dt: int, fout: io.TextIOWrapper):
             return False
         for row in rs[0].rows:
             cur_obj_id = row.obj_id
-            ln = "{},{},{},{}\n".format(cur_obj_id, row.otype, row.vm_id, row.cluster_id)
+            ln = "{},{},{},{},{}\n".format(dtstr, cur_obj_id, row.otype, row.vm_id, row.cluster_id)
             fout.write(ln)
         return True
     while True:
@@ -179,7 +186,7 @@ def extractDay(ctx: WorkContext, dt: int):
         logging.info("Refreshing S3 data for {} at path {}/{}".format(dt, ctx.s3_bucket, ctx.s3_prefix))
         fname = "/tmp/dp-compute-colorizer-data.txt"
         with open(fname, "wt") as fout:
-            fout.write("obj_id,obj_type,vm_id,cluster_id\n")
+            fout.write("dt,obj_id,obj_type,vm_id,cluster_id\n")
             runExtract(ctx, dt, fout)
         outname = ctx.s3_prefix + "/" + str(dt) + ".csv"
         getS3Client().upload_file(fname, ctx.s3_bucket, outname)

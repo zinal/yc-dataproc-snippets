@@ -7,7 +7,7 @@ echo `date`" - Generating ZIP archives for cloud functions..."
 (cd cf-scan && make)
 (cd cf-extract && make)
 
-. options.sh
+. ./options.sh
 
 # Service account with the required permissions.
 #    We expect that YDB database is created in the same YC folder,

@@ -1,6 +1,6 @@
 #! /bin/sh
 
-. options.sh
+. ./options.sh
 
 echo `date`" - Deleting trigger ${cf_name}-scan..."
 yc serverless trigger delete --name ${cf_name}-scan
