@@ -1,5 +1,6 @@
 import os
 import io
+import sys
 import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -21,6 +22,7 @@ class WorkContext(object):
         self.s3_bucket = s3_bucket
         self.s3_prefix = s3_prefix
 
+fixed_date = None
 boto_session = None
 storage_client = None
 
@@ -49,7 +51,6 @@ def getBotoSession():
 
     if access_key is None or secret_key is None:
         raise Exception("secrets required")
-    logging.debug("Key id: " + access_key)
 
     # initialize boto session
     boto_session = boto3.session.Session(
@@ -175,14 +176,17 @@ def updateCurrentStamp(ctx: WorkContext, dt: int, upd_tv: int):
 def extractDay(ctx: WorkContext, dt: int):
     stamp_prev, stamp_cur = readUpdateLabels(ctx, dt)
     if stamp_prev < stamp_cur:
+        logging.info("Refreshing S3 data for {} at path {}/{}".format(dt, ctx.s3_bucket, ctx.s3_prefix))
         fname = "/tmp/dp-compute-colorizer-data.txt"
         with open(fname, "wt") as fout:
             fout.write("obj_id,obj_type,vm_id,cluster_id\n")
-            runExtract(ctx, dt, stamp_cur, fout)
+            runExtract(ctx, dt, fout)
         outname = ctx.s3_prefix + "/" + str(dt) + ".csv"
         getS3Client().upload_file(fname, ctx.s3_bucket, outname)
         updateCurrentStamp(ctx, dt, stamp_cur)
         return True
+    else:
+        logging.debug("Skipping S3 refresh for {}".format(dt))
     return False
 
 def runCtx(ctx: WorkContext):
@@ -190,17 +194,20 @@ def runCtx(ctx: WorkContext):
         raise Exception("YDB table does not exist: item_ref")
     if not tableExists(ctx, "item_xtr"):
         raise Exception("YDB table does not exist: item_xtr")
-    # YC Billing treats dates in Moscow time
-    xtv = datetime.now(ZoneInfo('Europe/Moscow'))
-    xcur = xtv.date()
-    xprev = (xtv - timedelta(days=1)).date()
-    # Integer "dates" in YYYYMMDD format
-    date_now = (xcur.year * 10000) + (xcur.month * 100) + xcur.day
-    date_before = (xprev.year * 10000) + (xprev.month * 100) + xprev.day
-    # Check + extract for day before
-    extractDay(ctx, date_before)
-    # Check + extract for today
-    extractDay(ctx, date_now)
+    if fixed_date is None:
+        # YC Billing treats dates in Moscow time
+        xtv = datetime.now(ZoneInfo('Europe/Moscow'))
+        xcur = xtv.date()
+        xprev = (xtv - timedelta(days=1)).date()
+        # Integer "dates" in YYYYMMDD format
+        date_now = (xcur.year * 10000) + (xcur.month * 100) + xcur.day
+        date_before = (xprev.year * 10000) + (xprev.month * 100) + xprev.day
+        # Check + extract for day before
+        extractDay(ctx, date_before)
+        # Check + extract for today
+        extractDay(ctx, date_now)
+    else:
+        extractDay(ctx, fixed_date)
 
 def run():
     ydb_endpoint = os.getenv("YDB_ENDPOINT")
@@ -242,4 +249,9 @@ def handler(event, context):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger('ydb').setLevel(logging.WARNING)
+    logging.getLogger('s3transfer').setLevel(logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.INFO)
+    logging.getLogger('urllib3').setLevel(logging.INFO)
+    if len(sys.argv) > 1:
+        fixed_date = int(sys.argv[1])
     run()
