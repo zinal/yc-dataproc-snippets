@@ -1,1 +1,3 @@
+ydb
 yandexcloud
+boto3
