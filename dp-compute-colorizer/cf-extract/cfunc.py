@@ -1,19 +1,73 @@
 import os
-import json
+import io
 import logging
-import traceback
-import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import boto3
+import yandexcloud
 import ydb
+from yandex.cloud.lockbox.v1.payload_service_pb2 import GetPayloadRequest
+from yandex.cloud.lockbox.v1.payload_service_pb2_grpc import PayloadServiceStub
 
 class WorkContext(object):
-    __slots__ = ("pool", "dbpath", "table_prefix")
+    __slots__ = ("pool", "dbpath", "table_prefix", "s3_prefix", "s3_bucket")
 
-    def __init__(self, pool: ydb.SessionPool, dbpath: str, table_prefix: str) -> None:
+    def __init__(self, pool: ydb.SessionPool, 
+            dbpath: str, table_prefix: str, 
+            s3_bucket: str, s3_prefix: str) -> None:
         self.pool = pool
         self.dbpath = dbpath
         self.table_prefix = table_prefix
+        self.s3_bucket = s3_bucket
+        self.s3_prefix = s3_prefix
+
+boto_session = None
+storage_client = None
+
+def getBotoSession():
+    global boto_session
+    if boto_session is not None:
+        return boto_session
+
+    access_key = os.getenv('ACCESS_KEY_ID')
+    secret_key = os.getenv('SECRET_ACCESS_KEY')
+
+    if access_key is None or secret_key is None:
+        # initialize lockbox and read secret value
+        yc_sdk = yandexcloud.SDK()
+        channel = yc_sdk._channels.channel("lockbox-payload")
+        lockbox = PayloadServiceStub(channel)
+        response = lockbox.Get(GetPayloadRequest(secret_id=os.environ['SECRET_ID']))
+        # extract values from secret
+        access_key = None
+        secret_key = None
+        for entry in response.entries:
+            if entry.key == 'ACCESS_KEY_ID':
+                access_key = entry.text_value
+            elif entry.key == 'SECRET_ACCESS_KEY':
+                secret_key = entry.text_value
+
+    if access_key is None or secret_key is None:
+        raise Exception("secrets required")
+    logging.debug("Key id: " + access_key)
+
+    # initialize boto session
+    boto_session = boto3.session.Session(
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key
+    )
+    return boto_session
+
+def getS3Client():
+    global storage_client
+    if storage_client is not None:
+        return storage_client
+    storage_client = getBotoSession().client(
+        service_name='s3',
+        endpoint_url='https://storage.yandexcloud.net',
+        region_name='ru-central1'
+    )
+    return storage_client
 
 def ydbDirExists(driver, path):
     try:
@@ -63,7 +117,8 @@ def readUpdateLabels(ctx: WorkContext, dt: int):
         return stamp_prev, stamp_cur
     return ctx.pool.retry_operation_sync(callee)
 
-def runExtract(ctx: WorkContext, dt: int, upd_tv: int):
+# Extract the dictionary data to the temporary file
+def runExtract(ctx: WorkContext, dt: int, fout: io.TextIOWrapper):
     logging.debug("*** Extraction for date {}".format(dt))
     qtext = """
         DECLARE $crdate AS Int32;
@@ -91,12 +146,15 @@ def runExtract(ctx: WorkContext, dt: int, upd_tv: int):
             return False
         for row in rs[0].rows:
             cur_obj_id = row.obj_id
-            logging.debug("{} {} {} {}".format(cur_obj_id, row.vm_id, row.cluster_id, row.otype))
+            ln = "{},{},{},{}\n".format(cur_obj_id, row.otype, row.vm_id, row.cluster_id)
+            fout.write(ln)
         return True
     while True:
         if not ctx.pool.retry_operation_sync(callee):
             break
-    # Save the current update timestamp
+
+# Save the current update timestamp
+def updateCurrentStamp(ctx: WorkContext, dt: int, upd_tv: int):
     qtext = """
         DECLARE $crdate AS Int32;
         DECLARE $upd_tv AS Int64;
@@ -113,6 +171,20 @@ def runExtract(ctx: WorkContext, dt: int, upd_tv: int):
             commit_tx=True, )
     ctx.pool.retry_operation_sync(callee)
 
+# Extract the data for the day specified, and upload it to the S3 bucket
+def extractDay(ctx: WorkContext, dt: int):
+    stamp_prev, stamp_cur = readUpdateLabels(ctx, dt)
+    if stamp_prev < stamp_cur:
+        fname = "/tmp/dp-compute-colorizer-data.txt"
+        with open(fname, "wt") as fout:
+            fout.write("obj_id,obj_type,vm_id,cluster_id\n")
+            runExtract(ctx, dt, stamp_cur, fout)
+        outname = ctx.s3_prefix + "/" + str(dt) + ".csv"
+        getS3Client().upload_file(fname, ctx.s3_bucket, outname)
+        updateCurrentStamp(ctx, dt, stamp_cur)
+        return True
+    return False
+
 def runCtx(ctx: WorkContext):
     if not tableExists(ctx, "item_ref"):
         raise Exception("YDB table does not exist: item_ref")
@@ -126,13 +198,9 @@ def runCtx(ctx: WorkContext):
     date_now = (xcur.year * 10000) + (xcur.month * 100) + xcur.day
     date_before = (xprev.year * 10000) + (xprev.month * 100) + xprev.day
     # Check + extract for day before
-    stamp_prev, stamp_cur = readUpdateLabels(ctx, date_before)
-    if stamp_prev < stamp_cur:
-        runExtract(ctx, date_before, stamp_cur)
+    extractDay(ctx, date_before)
     # Check + extract for today
-    stamp_prev, stamp_cur = readUpdateLabels(ctx, date_now)
-    if stamp_prev < stamp_cur:
-        runExtract(ctx, date_now, stamp_cur)
+    extractDay(ctx, date_now)
 
 def run():
     ydb_endpoint = os.getenv("YDB_ENDPOINT")
@@ -144,18 +212,28 @@ def run():
     ydb_path = os.getenv("YDB_PATH")
     if ydb_path is None or len(ydb_path)==0:
         ydb_path = "dp-compute-colorizer"
+    s3_bucket = os.getenv("S3_BUCKET")
+    if s3_bucket is None or len(s3_bucket)==0:
+        raise Exception("missing S3_BUCKET env")
+    s3_prefix = os.getenv("S3_PREFIX")
+    if s3_prefix is None or len(s3_prefix)==0:
+        s3_prefix = "dp-compute-colorizer"
     with ydb.Driver(endpoint=ydb_endpoint, database=ydb_database) as driver:
         driver.wait(timeout=5, fail_fast=True)
         if not ydbDirExists(driver, ydb_database + "/" + ydb_path):
             raise Exception("Target YDB directory does not exist", ydb_path)
         with ydb.SessionPool(driver) as pool:
-            runCtx(WorkContext(pool, ydb_database, ydb_path))
+            runCtx(WorkContext(pool, ydb_database, ydb_path, s3_bucket, s3_prefix))
 
 def handler(event, context):
     logging.getLogger().setLevel(logging.INFO)
     logging.getLogger('ydb').setLevel(logging.WARNING)
     run()
 
+# export ACCESS_KEY_ID=...
+# export SECRET_ACCESS_KEY=...
+# export S3_BUCKET=billing1
+# export S3_PREFIX=dp-compute-colorizer
 # export YDB_PATH=billing1
 # export YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135
 # export YDB_DATABASE=/ru-central1/b1g1hfek2luako6vouqb/etno6m1l1lf4ae3j01ej
