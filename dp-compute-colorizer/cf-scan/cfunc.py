@@ -201,7 +201,7 @@ def runCtx(ctx: WorkContext):
     pageToken = None
     while True:
         req = cluster_service_pb.ListClustersRequest(
-            folder_id=yc_folder_id, page_size=PAGE_SIZE, page_token=pageToken)
+            folder_id=ctx.folder_id, page_size=PAGE_SIZE, page_token=pageToken)
         resp = clusterService.List(req)
         for cluster in resp.clusters:
             logging.debug('*** Processing cluster {}'.format(cluster.id))
