@@ -5,21 +5,17 @@ import traceback
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import yandex.cloud.dataproc.v1.cluster_pb2 as cluster_pb
+from collections import defaultdict
 import yandex.cloud.dataproc.v1.cluster_service_pb2 as cluster_service_pb
 import yandex.cloud.dataproc.v1.cluster_service_pb2_grpc as cluster_service_grpc_pb
-import yandex.cloud.dataproc.v1.subcluster_service_pb2 as subcluster_service_pb
-import yandex.cloud.dataproc.v1.subcluster_service_pb2_grpc as subcluster_service_grpc_pb
-import yandex.cloud.compute.v1.instancegroup.instance_group_service_pb2 as instance_group_service_pb
-import yandex.cloud.compute.v1.instancegroup.instance_group_service_pb2_grpc as instance_group_service_grpc_pb
-import yandex.cloud.compute.v1.instance_service_pb2 as instance_service_pb;
-import yandex.cloud.compute.v1.instance_service_pb2_grpc as instance_service_grpc_pb;
+import yandex.cloud.compute.v1.disk_service_pb2 as disk_service_pb;
+import yandex.cloud.compute.v1.disk_service_pb2_grpc as disk_service_grpc_pb;
 import yandexcloud
 import ydb
 
 USER_AGENT = 'ycloud-python-sdk:dataproc.compute_colorizer'
-PAGE_SIZE = 100
-MAX_RECORDS = 1000
+PAGE_SIZE = 5
+MAX_RECORDS = 500
 
 class ItemRecord(object):
     __slots__ = ("obj_id", "vm_id", "cluster_id", "otype")
@@ -37,7 +33,7 @@ class WorkContext(object):
     __slots__ = ("sdk", "pool", 
                 "folder_id", "dbpath", "table_prefix",
                 "inst_service",
-                "cur_date", "cur_items", "cur_tv")
+                "cur_date", "cur_items", "cur_tv", "cur_vms")
 
     def __init__(self,
         sdk: yandexcloud.SDK, pool: ydb.SessionPool, 
@@ -55,7 +51,10 @@ class WorkContext(object):
         # Integer "dates" in YYYYMMDD format
         self.cur_date = (xdate.year * 10000) + (xdate.month * 100) + xdate.day
         self.cur_tv = int(time.time() * 10000000)
+        # List of ItemRecords waiting to be saved
         self.cur_items = list()
+        # Maps instance id to cluster id
+        self.cur_vms = defaultdict(str)
 
 def appendItem(ctx: WorkContext, item: ItemRecord):
     if item is not None:
@@ -80,21 +79,21 @@ def ydbDirExists(driver, path):
     except ydb.SchemeError:
         return False
 
-def tableExistsSess(ctx: WorkContext, session: ydb.Session, tableName: str) -> bool:
+def ydbTableExistsSess(ctx: WorkContext, session: ydb.Session, tableName: str) -> bool:
     try:
         result = session.describe_table(ctx.dbpath + "/" + ctx.table_prefix + "/" + tableName)
         return len(result.columns) > 0
     except ydb.SchemeError:
         return False
 
-def tableExists(ctx: WorkContext, tableName: str) -> bool:
+def ydbTableExists(ctx: WorkContext, tableName: str) -> bool:
     def callee(session: ydb.Session):
-        return tableExistsSess(ctx, session, tableName)
+        return ydbTableExistsSess(ctx, session, tableName)
     return ctx.pool.retry_operation_sync(callee)
 
 def createTables(ctx: WorkContext):
     def callee(session: ydb.Session):
-        if not tableExistsSess(ctx, session, "item_ref"):
+        if not ydbTableExistsSess(ctx, session, "item_ref"):
             logging.info("Creating table {}/item_ref".format(ctx.table_prefix))
             session.execute_scheme(
                 """
@@ -109,7 +108,7 @@ def createTables(ctx: WorkContext):
                 )
                 """.format(ctx.table_prefix)
             )
-        if not tableExistsSess(ctx, session, "item_xtr"):
+        if not ydbTableExistsSess(ctx, session, "item_xtr"):
             logging.info("Creating table {}/item_xtr".format(ctx.table_prefix))
             session.execute_scheme(
                 """
@@ -159,26 +158,6 @@ def saveItems(ctx: WorkContext, items: list):
         return retval
     return None
 
-def processHost(ctx: WorkContext, clusterId, instanceId):
-    appendVm(ctx, clusterId, instanceId)
-    try:
-        if ctx.inst_service is None:
-            ctx.inst_service = ctx.sdk.client(instance_service_grpc_pb.InstanceServiceStub)
-        reqGet = instance_service_pb.GetInstanceRequest(instance_id=instanceId)
-        respGet = ctx.inst_service.Get(reqGet)
-    except Exception as e:
-        logging.error(traceback.format_exc())
-        respGet = None
-    if respGet is not None:
-        if respGet.boot_disk is not None:
-            appendDisk(ctx, clusterId, instanceId, respGet.boot_disk.disk_id)
-        if respGet.secondary_disks is not None:
-            for d in respGet.secondary_disks:
-                appendDisk(ctx, clusterId, instanceId, d.disk_id)
-        if respGet.filesystems is not None:
-            for f in respGet.filesystems:
-                appendNfs(ctx, clusterId, instanceId, f.filesystem_id)
-
 def processCluster(ctx: WorkContext, clusterService, cluster):
     pageToken = None
     while True:
@@ -187,16 +166,13 @@ def processCluster(ctx: WorkContext, clusterService, cluster):
         resp = clusterService.ListHosts(req)
         for host in resp.hosts:
             logging.debug('*** Processing host {} for cluster {}'.format(host.compute_instance_id, cluster.id))
-            try:
-                processHost(ctx, cluster.id, host.compute_instance_id)
-            except Exception as e:
-                logging.error(traceback.format_exc())
+            ctx.cur_vms[host.compute_instance_id] |= cluster.id
+            appendVm(ctx, cluster.id, host.compute_instance_id)
         pageToken = resp.next_page_token
         if len(resp.hosts) < PAGE_SIZE:
             break
 
-def runCtx(ctx: WorkContext):
-    createTables(ctx)
+def processClusters(ctx: WorkContext):
     clusterService = ctx.sdk.client(cluster_service_grpc_pb.ClusterServiceStub)
     pageToken = None
     while True:
@@ -209,6 +185,36 @@ def runCtx(ctx: WorkContext):
         pageToken = resp.next_page_token
         if len(resp.clusters) < PAGE_SIZE:
             break
+
+def processDisk(ctx: WorkContext, diskId: str, instanceId: str):
+    clusterId = ctx.cur_vms.get(instanceId)
+    if clusterId is None:
+        logging.debug('*** Skipping disk {} attached to {}'.format(diskId, instanceId))
+    else:
+        logging.debug('*** Processing disk {} attached to {}'.format(diskId, instanceId))
+        appendDisk(ctx, clusterId, instanceId, diskId)
+
+def processDisks(ctx: WorkContext):
+    diskService = ctx.sdk.client(disk_service_grpc_pb.DiskServiceStub)
+    pageToken = None
+    while True:
+        req = disk_service_pb.ListDisksRequest(
+            folder_id=ctx.folder_id, page_size=PAGE_SIZE, page_token=pageToken)
+        resp = diskService.List(req)
+        for disk in resp.disks:
+            if disk.instance_ids is not None:
+                for instance_id in disk.instance_ids:
+                    processDisk(ctx, disk.id, instance_id)
+        pageToken = resp.next_page_token
+        if len(resp.clusters) < PAGE_SIZE:
+            break
+
+def runCtx(ctx: WorkContext):
+    ctx.cur_vms.clear()
+    ctx.cur_items.clear()
+    createTables(ctx)
+    processClusters(ctx)
+    processDisks(ctx)
     # Flush the remaining records to YDB table
     appendItem(ctx, None)
 
