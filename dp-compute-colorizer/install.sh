@@ -4,8 +4,8 @@ set -e
 set -u
 
 echo `date`" - Generating ZIP archives for cloud functions..."
-(cd cf-scan && make)
-(cd cf-extract && make)
+(cd cf-scan && ./pack.sh)
+(cd cf-extract && ./pack.sh)
 
 . ./options.sh
 
