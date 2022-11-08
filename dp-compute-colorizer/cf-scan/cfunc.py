@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import traceback
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -14,7 +13,7 @@ import yandexcloud
 import ydb
 
 USER_AGENT = 'ycloud-python-sdk:dataproc.compute_colorizer'
-PAGE_SIZE = 5
+PAGE_SIZE = 100
 MAX_RECORDS = 500
 
 class ItemRecord(object):
@@ -166,10 +165,10 @@ def processCluster(ctx: WorkContext, clusterService, cluster):
         resp = clusterService.ListHosts(req)
         for host in resp.hosts:
             logging.debug('*** Processing host {} for cluster {}'.format(host.compute_instance_id, cluster.id))
-            ctx.cur_vms[host.compute_instance_id] |= cluster.id
+            ctx.cur_vms[host.compute_instance_id] = cluster.id
             appendVm(ctx, cluster.id, host.compute_instance_id)
         pageToken = resp.next_page_token
-        if len(resp.hosts) < PAGE_SIZE:
+        if pageToken is None or len(pageToken)==0 or len(resp.hosts) < PAGE_SIZE:
             break
 
 def processClusters(ctx: WorkContext):
@@ -183,7 +182,7 @@ def processClusters(ctx: WorkContext):
             logging.debug('*** Processing cluster {}'.format(cluster.id))
             processCluster(ctx, clusterService, cluster)
         pageToken = resp.next_page_token
-        if len(resp.clusters) < PAGE_SIZE:
+        if pageToken is None or len(pageToken)==0 or len(resp.clusters) < PAGE_SIZE:
             break
 
 def processDisk(ctx: WorkContext, diskId: str, instanceId: str):
@@ -206,7 +205,7 @@ def processDisks(ctx: WorkContext):
                 for instance_id in disk.instance_ids:
                     processDisk(ctx, disk.id, instance_id)
         pageToken = resp.next_page_token
-        if len(resp.clusters) < PAGE_SIZE:
+        if pageToken is None or len(pageToken)==0 or len(resp.disks) < PAGE_SIZE:
             break
 
 def runCtx(ctx: WorkContext):
