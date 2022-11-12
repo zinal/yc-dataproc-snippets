@@ -21,6 +21,8 @@ import static org.apache.hadoop.fs.s3a.Constants.S3GUARD_DDB_REGION_KEY;
  *       to specify the DynamoDB endpoint to be used;
  *   (b) it does not check the validity of the AWS region specified.
  * The modified class allows YDB Serverless to be used to serve DynamoDB requests of S3Guard.
+ * It has to be added to the Hadoop jars, and configured by setting the property:
+ *   fs.s3a.s3guard.ddb.client.factory.impl = ru.yandex.cloud.s3guard.YandexCloudDynamoDBClientFactory
  * @author zinal
  */
 public class YandexCloudDynamoDBClientFactory extends Configured implements DynamoDBClientFactory {
