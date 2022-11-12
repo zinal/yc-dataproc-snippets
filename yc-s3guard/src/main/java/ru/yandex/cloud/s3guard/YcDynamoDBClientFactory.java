@@ -18,7 +18,8 @@ import static org.apache.hadoop.fs.s3a.Constants.S3GUARD_DDB_REGION_KEY;
  * This class works generally like DynamoDBClientFactory.DefaultDynamoDBClientFactory, but supports
  * the additional configuraiton properties:
  *   * "fs.s3a.s3guard.ddb.endpoint" - to specify the DynamoDB endpoint to be used;
- *   * "fs.s3a.s3guard.ddb.lockbox" - Yandex Cloud Lockbox entry holding the AWS key id and secret.
+ *   * "fs.s3a.s3guard.ddb.lockbox" - Yandex Cloud Lockbox entry holding the AWS key id and secret;
+ *   * "fs.s3a.s3guard.ddb.keyfile" - Java XML properties file holding the AWS key id and secret.
  *
  * The modified class allows YDB Serverless in Yandex Cloud to be used to serve DynamoDB requests of
  * S3Guard.
@@ -35,6 +36,7 @@ public class YcDynamoDBClientFactory extends Configured implements DynamoDBClien
 
     public static final String S3GUARD_DDB_ENDPOINT_KEY = "fs.s3a.s3guard.ddb.endpoint";
     public static final String S3GUARD_DDB_LOCKBOX_KEY = "fs.s3a.s3guard.ddb.lockbox";
+    public static final String S3GUARD_DDB_KEYFILE_KEY = "fs.s3a.s3guard.ddb.keyfile";
 
     @Override
     public AmazonDynamoDB createDynamoDBClient(String defaultRegion,
@@ -50,26 +52,34 @@ public class YcDynamoDBClientFactory extends Configured implements DynamoDBClien
                         .withCredentials(credentials)
                         .withClientConfiguration(awsConf);
 
-        final String lockboxKey = getLockboxSecret(conf);
+        final String keyfile = getKeyFile(conf);
+        final String lockbox = getLockboxSecret(conf);
         final String endpoint = getEndpoint(conf);
         final String region = getRegion(conf, defaultRegion);
 
         if (StringUtils.isEmpty(endpoint)) {
-            LOG.info("Creating DynamoDB client with region {}", region);
+            LOG.debug("Creating DynamoDB client with region {}", region);
             builder = builder.withRegion(region);
         } else {
-            LOG.info("Creating DynamoDB client with explicit endpoint {}", endpoint);
+            LOG.debug("Creating DynamoDB client with explicit endpoint {}", endpoint);
             builder.disableEndpointDiscovery();
             builder = builder.withEndpointConfiguration(
                     new AwsClientBuilder.EndpointConfiguration(endpoint, region));
         }
 
-        if (!StringUtils.isEmpty(lockboxKey)) {
-            LOG.info("Reading the AWS credentials from Lockbox entry {}", lockboxKey);
-            builder = builder.withCredentials(new YcLockboxAwsCredentialsProvider(lockboxKey));
+        if (!StringUtils.isEmpty(keyfile)) {
+            LOG.debug("Reading the AWS credentials from key file {}", keyfile);
+            builder = builder.withCredentials(new YcFileAwsCredentialsProvider(keyfile));
+        } else if (!StringUtils.isEmpty(lockbox)) {
+            LOG.debug("Reading the AWS credentials from Lockbox entry {}", lockbox);
+            builder = builder.withCredentials(new YcLockboxAwsCredentialsProvider(lockbox));
         }
 
         return builder.build();
+    }
+
+    static String getKeyFile(Configuration conf) {
+        return conf.getTrimmed(S3GUARD_DDB_KEYFILE_KEY);
     }
 
     static String getLockboxSecret(Configuration conf) {

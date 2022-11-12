@@ -17,6 +17,9 @@ import yandex.cloud.sdk.auth.Auth;
  */
 public class YcLockboxAwsCredentialsProvider implements AWSCredentialsProvider {
 
+    private static final org.slf4j.Logger LOG
+            = org.slf4j.LoggerFactory.getLogger(YcDynamoDBClientFactory.class);
+
     public static final String ENTRY_ID = "key-id";
     public static final String ENTRY_SECRET = "key-secret";
 
@@ -37,11 +40,18 @@ public class YcLockboxAwsCredentialsProvider implements AWSCredentialsProvider {
         String keySecret = null;
         if (response!=null) {
             for (Payload.Entry e : response.getEntriesList()) {
+                LOG.debug("Processing Yandex Cloud Lockbox entry: {}", e.getKey());
                 if ( ENTRY_ID.equalsIgnoreCase(e.getKey()) )
                     keyId = e.getTextValue();
                 else if ( ENTRY_SECRET.equalsIgnoreCase(e.getKey()) )
                     keySecret = e.getTextValue();
             }
+            if (keyId==null || keySecret==null) {
+                LOG.warn("Entry {} in the Yandex Cloud Lockbox does not contain entries {} and {}",
+                        lockboxEntryName, ENTRY_ID, ENTRY_SECRET);
+            }
+        } else {
+            LOG.warn("Missing entry {} in the Yandex Cloud Lockbox", lockboxEntryName);
         }
         this.credentials = (keyId==null || keySecret==null) ?
                 null : new BasicAWSCredentials(keyId, keySecret);

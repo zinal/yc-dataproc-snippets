@@ -1,0 +1,2 @@
+export HADOOP_ROOT_LOGGER=hadoop.root.logger=DEBUG,console
+hdfs dfs -ls s3a://ms1/
