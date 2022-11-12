@@ -48,9 +48,7 @@ public class YcDynamoDBClientFactory extends Configured implements DynamoDBClien
         final ClientConfiguration awsConf = S3AUtils.createAwsConf(conf, bucket);
 
         AmazonDynamoDBClientBuilder builder
-                = AmazonDynamoDBClientBuilder.standard()
-                        .withCredentials(credentials)
-                        .withClientConfiguration(awsConf);
+                = AmazonDynamoDBClientBuilder.standard();
 
         final String keyfile = getKeyFile(conf);
         final String lockbox = getLockboxSecret(conf);
@@ -62,7 +60,7 @@ public class YcDynamoDBClientFactory extends Configured implements DynamoDBClien
             builder = builder.withRegion(region);
         } else {
             LOG.debug("Creating DynamoDB client with explicit endpoint {}", endpoint);
-            builder.disableEndpointDiscovery();
+            builder = builder.disableEndpointDiscovery();
             builder = builder.withEndpointConfiguration(
                     new AwsClientBuilder.EndpointConfiguration(endpoint, region));
         }
@@ -73,9 +71,12 @@ public class YcDynamoDBClientFactory extends Configured implements DynamoDBClien
         } else if (!StringUtils.isEmpty(lockbox)) {
             LOG.debug("Reading the AWS credentials from Lockbox entry {}", lockbox);
             builder = builder.withCredentials(new YcLockboxAwsCredentialsProvider(lockbox));
+        } else {
+            LOG.debug("Using the default input AWS credentials");
+            builder = builder.withCredentials(credentials);
         }
 
-        return builder.build();
+        return builder.withClientConfiguration(awsConf).build();
     }
 
     static String getKeyFile(Configuration conf) {
