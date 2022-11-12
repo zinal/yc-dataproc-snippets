@@ -50,7 +50,7 @@ public class YcLockboxAwsCredentialsProvider implements AWSCredentialsProvider {
                 LOG.warn("Entry {} in the Yandex Cloud Lockbox does not contain entries {} and {}",
                         lockboxEntryName, ENTRY_ID, ENTRY_SECRET);
             } else {
-                LOG.info("Using AWS access key {} -> {}", keyId, keySecret);
+                LOG.debug("Using AWS access key {}", keyId);
             }
         } else {
             LOG.warn("Missing entry {} in the Yandex Cloud Lockbox", lockboxEntryName);

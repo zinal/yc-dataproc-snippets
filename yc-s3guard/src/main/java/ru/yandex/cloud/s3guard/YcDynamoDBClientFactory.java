@@ -4,23 +4,21 @@ import java.io.IOException;
 import org.apache.commons.lang3.StringUtils;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.s3a.s3guard.DynamoDBClientFactory;
-import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.s3a.S3AUtils;
 import static org.apache.hadoop.fs.s3a.Constants.S3GUARD_DDB_REGION_KEY;
 
 /**
- * This class works generally like DynamoDBClientFactory.DefaultDynamoDBClientFactory, but supports
- * the additional configuraiton properties:
+ * This class works generally like DynamoDBClientFactory.DefaultDynamoDBClientFactory,
+ * but supports the additional configuraiton properties:
  *   * "fs.s3a.s3guard.ddb.endpoint" - to specify the DynamoDB endpoint to be used;
  *   * "fs.s3a.s3guard.ddb.lockbox" - Yandex Cloud Lockbox entry holding the AWS key id and secret;
  *   * "fs.s3a.s3guard.ddb.keyfile" - Java XML properties file holding the AWS key id and secret.
- *
+ * In addition, it does not honor the AWS ClientConfiguration.
  * The modified class allows YDB Serverless in Yandex Cloud to be used to serve DynamoDB requests of
  * S3Guard.
  *
@@ -45,7 +43,6 @@ public class YcDynamoDBClientFactory extends Configured implements DynamoDBClien
                 "Should have been configured before usage");
 
         final Configuration conf = getConf();
-        final ClientConfiguration awsConf = S3AUtils.createAwsConf(conf, bucket);
 
         AmazonDynamoDBClientBuilder builder
                 = AmazonDynamoDBClientBuilder.standard();
@@ -76,7 +73,7 @@ public class YcDynamoDBClientFactory extends Configured implements DynamoDBClien
             builder = builder.withCredentials(credentials);
         }
 
-        return builder.withClientConfiguration(awsConf).build();
+        return builder.build();
     }
 
     static String getKeyFile(Configuration conf) {
