@@ -1,3 +1,4 @@
 /target/
+/deps/
 .vscode
 nb-configuration.xml
