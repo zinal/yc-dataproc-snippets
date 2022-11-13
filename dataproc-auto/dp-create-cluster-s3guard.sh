@@ -30,15 +30,15 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --version ${YC_VERSION} --ui-proxy \
   --services yarn,hive,tez,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
-  --subcluster name="${YC_CLUSTER}_master",role='masternode',resource-preset='s3-c4-m16',disk-type='network-hdd',disk-size=150,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="${YC_CLUSTER}_compute",role='computenode',resource-preset='s3-c8-m32',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,max-hosts-count=3,subnet-name=${YC_SUBNET} \
+  --subcluster name="master",role='masternode',resource-preset='s3-c4-m16',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="compute1",role='computenode',resource-preset='s3-c8-m32',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,max-hosts-count=3,subnet-name=${YC_SUBNET} \
   --ssh-public-keys-file ssh-keys.tmp \
   --initialization-action='uri=s3a://dproc-code/init-scripts/dp-init-s3guard.sh' \
   --property core:fs.s3a.metadatastore.impl=org.apache.hadoop.fs.s3a.s3guard.DynamoDBMetadataStore \
   --property core:fs.s3a.bucket.dproc-code.metadatastore.impl=org.apache.hadoop.fs.s3a.s3guard.NullMetadataStore \
   --property core:fs.s3a.s3guard.ddb.client.factory.impl=ru.yandex.cloud.s3guard.YcDynamoDBClientFactory \
   --property core:fs.s3a.s3guard.ddb.endpoint=${YC_YDB} \
-  --property core:fs.s3a.s3guard.ddb.lockbox=${YC_LOCKBOX_KEY} \
+  --property core:fs.s3a.s3guard.ddb.keyfile=/etc/s3guard-ydb-keyfile.xml \
   --property core:fs.s3a.s3guard.ddb.region=ru-central1 \
   --property core:fs.s3a.s3guard.ddb.table=dproc_s3guard \
   --property core:fs.s3a.s3guard.ddb.table.create=true \

@@ -1,1 +1,0 @@
-/usr/lib/hadoop/lib/protobuf-java-2.5.0.jar

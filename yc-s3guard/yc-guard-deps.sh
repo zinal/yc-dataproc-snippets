@@ -1,5 +1,8 @@
 #! /bin/sh
 
+# Collect the dependencies for Yandex Cloud Java SDK.
+# Work in progress, not to be actually used.
+
 rm -rf deps
 mkdir deps
 
