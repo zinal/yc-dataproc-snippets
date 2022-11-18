@@ -12,7 +12,7 @@ YC_ZONE=ru-central1-b
 YC_SUBNET=default-ru-central1-b
 YC_BUCKET=ms1
 YC_SA=dp1
-YC_METASTORE='thrift://rc1b-dataproc-m-enwlteuuxbltzq8r.mdb.yandexcloud.net:9083'
+YC_METASTORE='thrift://rc1b-dataproc-m-lscxspnzmtnho7dk.mdb.yandexcloud.net:9083'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAcV0HrAheoHrN5ow3i6+3QN6TCyB7FNDsQbhK+i8aPNgYsdT4iWDIAllVGxUHRprkBSKSt5tzweXF48pztGTJo= mzinal@ydb1" >ssh-keys.tmp
 
@@ -23,7 +23,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --services yarn,hive,tez,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="${YC_CLUSTER}_master",role='masternode',resource-preset='s3-c4-m16',disk-type='network-hdd',disk-size=150,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="${YC_CLUSTER}_compute",role='computenode',resource-preset='s3-c4-m16',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,max-hosts-count=3,subnet-name=${YC_SUBNET} \
+  --subcluster name="${YC_CLUSTER}_compute",role='computenode',resource-preset='s3-c8-m32',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,max-hosts-count=3,subnet-name=${YC_SUBNET} \
   --ssh-public-keys-file ssh-keys.tmp \
   --property core:fs.s3a.committer.name=magic \
   --property core:fs.s3a.committer.magic.enabled=true \
@@ -38,7 +38,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol \
   --property spark:spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter \
   --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
-  --property spark:spark.executor.cores=2 \
-  --property spark:spark.executor.memory=4g \
+  --property spark:spark.executor.cores=1 \
+  --property spark:spark.executor.memory=3g \
   --property spark:spark.driver.cores=2 \
   --property spark:spark.driver.memory=4g
