@@ -4,15 +4,17 @@
 # Предполагается, что уже созданы
 #  * бакет Object Storage,
 #  * сервисный аккаунт с доступом к бакету,
-#  * внешний сервис Hive Metastore
+#  * база данных PostgreSQL для Hive Metastore
 
-YC_CLUSTER=dproc1
+YC_CLUSTER=dproc2
 YC_VERSION=2.0
 YC_ZONE=ru-central1-b
 YC_SUBNET=default-ru-central1-b
 YC_BUCKET=ms1
 YC_SA=dp1
-YC_METASTORE='thrift://rc1b-dataproc-m-vrgbjt4afo6zvrtj.mdb.yandexcloud.net:9083'
+YC_DBURL='jdbc:postgresql://rc1b-pajy1x3lh8tk04u4.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require'
+YC_DBUSER='hive'
+YC_DBPASS='sai0Doh8Eib0iav'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAcV0HrAheoHrN5ow3i6+3QN6TCyB7FNDsQbhK+i8aPNgYsdT4iWDIAllVGxUHRprkBSKSt5tzweXF48pztGTJo= mzinal@ydb1" >ssh-keys.tmp
 
@@ -29,7 +31,6 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:fs.s3a.committer.magic.enabled=true \
   --property core:fs.s3a.committer.staging.conflict-mode=fail \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
-  --property hive:hive.metastore.uris="${YC_METASTORE}" \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
@@ -38,7 +39,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol \
   --property spark:spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter \
   --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
-  --property spark:spark.executor.cores=1 \
-  --property spark:spark.executor.memory=3g \
-  --property spark:spark.driver.cores=2 \
-  --property spark:spark.driver.memory=4g
+  --property hive:javax.jdo.option.ConnectionURL=${YC_DBURL} \
+  --property hive:javax.jdo.option.ConnectionDriverName=org.postgresql.Driver \
+  --property hive:javax.jdo.option.ConnectionPassword=${YC_DBPASS} \
+  --property hive:javax.jdo.option.ConnectionUserName=${YC_DBUSER} \
+  --property hive:hive.metastore.warehouse.dir=s3a://${YC_BUCKET}/warehouse
