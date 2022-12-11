@@ -16,7 +16,7 @@ YC_DBURL='jdbc:postgresql://rc1b-pajy1x3lh8tk04u4.mdb.yandexcloud.net:6432/hive?
 YC_DBUSER='hive'
 YC_DBPASS='sai0Doh8Eib0iav'
 
-echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAcV0HrAheoHrN5ow3i6+3QN6TCyB7FNDsQbhK+i8aPNgYsdT4iWDIAllVGxUHRprkBSKSt5tzweXF48pztGTJo= mzinal@ydb1" >ssh-keys.tmp
+echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \

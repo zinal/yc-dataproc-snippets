@@ -6,7 +6,7 @@
 #  * сервисный аккаунт с доступом к бакету,
 #  * база данных PostgreSQL для Hive Metastore
 
-YC_CLUSTER=dproc2
+YC_CLUSTER=dproc3
 YC_VERSION=2.0
 YC_ZONE=ru-central1-b
 YC_SUBNET=default-ru-central1-b
@@ -24,8 +24,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --version ${YC_VERSION} --ui-proxy \
   --services yarn,hive,tez,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
-  --subcluster name="${YC_CLUSTER}_master",role='masternode',resource-preset='m3-c2-m16',disk-type='network-hdd',disk-size=150,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="${YC_CLUSTER}_compute",role='computenode',resource-preset='s3-c4-m16',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,max-hosts-count=3,subnet-name=${YC_SUBNET} \
+  --subcluster name="${YC_CLUSTER}_master",role='masternode',resource-preset='s3-c8-m32',disk-type='network-hdd',disk-size=150,hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="${YC_CLUSTER}_compute",role='computenode',resource-preset='s3-c16-m64',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=8,subnet-name=${YC_SUBNET} \
   --ssh-public-keys-file ssh-keys.tmp \
   --property core:fs.s3a.committer.name=magic \
   --property core:fs.s3a.committer.magic.enabled=true \

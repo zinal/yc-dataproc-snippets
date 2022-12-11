@@ -14,7 +14,7 @@ YC_BUCKET=ms1
 YC_SA=dp1
 YC_METASTORE='thrift://rc1b-dataproc-m-vrgbjt4afo6zvrtj.mdb.yandexcloud.net:9083'
 
-echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAcV0HrAheoHrN5ow3i6+3QN6TCyB7FNDsQbhK+i8aPNgYsdT4iWDIAllVGxUHRprkBSKSt5tzweXF48pztGTJo= mzinal@ydb1" >ssh-keys.tmp
+echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
