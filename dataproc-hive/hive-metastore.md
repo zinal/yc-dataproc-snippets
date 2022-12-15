@@ -130,10 +130,91 @@ yc dataproc cluster create hive-sample-cluster \
   --property core:fs.s3a.committer.name=directory \
   --property core:fs.s3a.committer.staging.conflict-mode=append \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
+  --property hive:javax.jdo.option.ConnectionURL='jdbc:postgresql://rc1a-i9gzawc9db9a516g.mdb.yandexcloud.net:6432,rc1b-aohkuuhqimb7cjty.mdb.yandexcloud.net:6432,rc1c-d9lg5uu7nc2duwx1.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require' \
+  --property hive:javax.jdo.option.ConnectionDriverName=org.postgresql.Driver \
+  --property hive:javax.jdo.option.ConnectionUserName=hive \
+  --property hive:javax.jdo.option.ConnectionPassword='chahle1Eiqu5BukieZoh' \
   --property hive:hive.metastore.warehouse.dir=s3a://${YC_BUCKET}/warehouse \
   --property hive:hive.exec.compress.output=true
 ```
 
+Необходимый комплект компонентов Data Proc в примере выше включает в себя:
+* собственно сервис Hive;
+* YARN и Tez, для управления вычислительными ресурсами;
+* HDFS и MapReduce, от которых сервис Hive сейчас зависит - они необходимы даже при хранении данных в Object Storage.
+
+Для эффективной записи данных в Object Storage в примере выше включён S3A Committer в режиме `directory`.
+
+По умолчанию базы данных и таблицы Hive размещаются в бакете Object Storage, что установлено с помощью свойства `hive.metastore.warehouse.dir`.
+
+Проверить работоспособность Hive можно путём запуска клиента `hive cli` или `beeline` на мастер-узле кластера Data Proc и выполнения команд для создания таблицы, вставки в таблицу данных и проверки выборки из таблицы. Пример действий по проверке работоспособности Hive приведён ниже.
+
+```
+$ yc dataproc cluster list
++----------------------+---------------------+---------------------+--------+---------+
+|          ID          |        NAME         |     CREATED AT      | HEALTH | STATUS  |
++----------------------+---------------------+---------------------+--------+---------+
+| c9qhol07vtdmckpj1mo9 | hive-sample-cluster | 2022-12-15 10:21:58 | ALIVE  | RUNNING |
++----------------------+---------------------+---------------------+--------+---------+
+
+$ yc dataproc cluster list-hosts --name=hive-sample-cluster
++------------------------------------------------------+----------------------+-------------+----------------------+--------+
+|                         NAME                         | COMPUTE INSTANCE ID  |    ROLE     |    SUBCLUSTER ID     | HEALTH |
++------------------------------------------------------+----------------------+-------------+----------------------+--------+
+| rc1b-dataproc-d-0jdg23hq790duz5b.mdb.yandexcloud.net | epd9c7av31jjjf0jnv0f | DATANODE    | c9q2k4dev49aavgk8i7l | ALIVE  |
+| rc1b-dataproc-m-iyzhjdcj90ktrhty.mdb.yandexcloud.net | epdrtasd2ab2r4lm8tsq | MASTERNODE  | c9q7lkkkmjahooh8kq0c | ALIVE  |
+| rc1b-dataproc-g-itat.mdb.yandexcloud.net             | epdp37t2ik2173rl3r62 | COMPUTENODE | c9qec3qu0rul015m37r5 | ALIVE  |
++------------------------------------------------------+----------------------+-------------+----------------------+--------+
+
+$ ssh gw1
+Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-56-generic x86_64)
+...
+demo@gw1:~$ ssh ubuntu@rc1b-dataproc-m-iyzhjdcj90ktrhty.mdb.yandexcloud.net
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.4.0-132-generic x86_64)
+...
+ubuntu@rc1b-dataproc-m-iyzhjdcj90ktrhty:~$ hive cli
+Hive Session ID = ac15b890-413e-4b0f-85fb-eb0fb2e2512a
+
+Logging initialized using configuration in file:/etc/hive/conf.dist/hive-log4j2.properties Async: true
+Hive Session ID = 4a1acdee-9100-47f3-a223-938387b36401
+
+    > create database demo1;
+OK
+Time taken: 2.698 seconds
+hive> use demo1;
+OK
+Time taken: 0.077 seconds
+hive> create table test1(a integer not null, b varchar(100)) stored as orc;
+OK
+Time taken: 0.928 seconds
+hive> insert into test1(a,b) values(1,'One'),(2,'Two'),(3,'Three');
+Query ID = ubuntu_20221215103226_23a90afb-5872-4f77-9de7-5908a466fe5f
+Total jobs = 1
+Launching Job 1 out of 1
+Tez session was closed. Reopening...
+Session re-established.
+Session re-established.
+Status: Running (Executing on YARN cluster with App id application_1671099904244_0006)
+
+----------------------------------------------------------------------------------------------
+        VERTICES      MODE        STATUS  TOTAL  COMPLETED  RUNNING  PENDING  FAILED  KILLED  
+----------------------------------------------------------------------------------------------
+Map 1 .......... container     SUCCEEDED      1          1        0        0       0       0  
+Reducer 2 ...... container     SUCCEEDED      1          1        0        0       0       0  
+----------------------------------------------------------------------------------------------
+VERTICES: 02/02  [==========================>>] 100%  ELAPSED TIME: 8.10 s     
+----------------------------------------------------------------------------------------------
+Loading data to table demo1.test1
+OK
+Time taken: 19.697 seconds
+hive> select * from test1;
+OK
+1	One
+2	Two
+3	Three
+Time taken: 0.401 seconds, Fetched: 3 row(s)
+hive> 
+```
 
 # Настройка и использование внешнего сервиса Hive Metastore
 
