@@ -11,7 +11,7 @@ YC_CLUSTER=normal-1
 YC_VERSION=2.0.58
 YC_ZONE=ru-central1-b
 YC_SUBNET=default-ru-central1-b
-YC_BUCKET=dproc1
+YC_BUCKET=dproc2
 YC_SA=dp1
 YC_MS_URL='jdbc:postgresql://rc1a-i9gzawc9db9a516g.mdb.yandexcloud.net:6432,rc1b-aohkuuhqimb7cjty.mdb.yandexcloud.net:6432,rc1c-d9lg5uu7nc2duwx1.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require'
 YC_MS_PASS='chahle1Eiqu5BukieZoh'
@@ -26,7 +26,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=8,subnet-name=${YC_SUBNET} \
+  --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=2,max-hosts-count=8,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property core:fs.s3a.committer.name=directory \
   --property core:fs.s3a.committer.staging.conflict-mode=append \
@@ -45,4 +45,4 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol \
   --property spark:spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter \
   --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/geesefs_mount.sh'
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh,args='${YC_BUCKET}
