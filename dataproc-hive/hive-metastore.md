@@ -55,6 +55,49 @@ yc dataproc cluster create hive-ms-init \
 
 Доступ к кластеру будет осуществляться с промежуточного хоста, который должен быть предварительно создан (например, в виде виртуальной машины под управлением ОС Linux), и подключен к необходимой подсети и группе безопасности. На промежуточном хосте должен быть сгенерирован SSH-ключ, публичная часть ключа используется при создании временного кластера Data Proc (в примере команды выше ключ записан в файл `ssh-keys.tmp`).
 
+После завершения создания кластера необходимо зайти с помощью клиента ssh от имени пользователя `ubuntu` на мастер-узел кластера. Имя хоста мастер-узла кластера Data Proc можно получить из Web-консоли либо из вывода команды `yc dataproc cluster list-hosts --name hive-ms-init` (здесь аргумент `hive-ms-init` - имя созданного кластера Data Proc).
+
+Пример последовательности команд для входа на мастер-узел кластера Data Proc:
+
+```
+$ yc dataproc cluster list-hosts --name hive-ms-init
++------------------------------------------------------+----------------------+-------------+----------------------+--------+
+|                         NAME                         | COMPUTE INSTANCE ID  |    ROLE     |    SUBCLUSTER ID     | HEALTH |
++------------------------------------------------------+----------------------+-------------+----------------------+--------+
+| rc1b-dataproc-m-v2vn8bjkhogp07t1.mdb.yandexcloud.net | epdke0h9lv2717o6u122 | MASTERNODE  | c9qee4kkui19nd87t81q | ALIVE  |
+| rc1b-dataproc-g-otal.mdb.yandexcloud.net             | epdirroqc79157797f7q | COMPUTENODE | c9qur5s18or19o7tr5h0 | ALIVE  |
++------------------------------------------------------+----------------------+-------------+----------------------+--------+
+
+$ ssh gw1
+Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-56-generic x86_64)
+...
+demo@gw1:~$ ssh ubuntu@rc1b-dataproc-m-v2vn8bjkhogp07t1.mdb.yandexcloud.net
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.4.0-132-generic x86_64)
+...
+ubuntu@rc1b-dataproc-m-v2vn8bjkhogp07t1:~$ 
+```
+
+В примере выше `gw1` - имя промежуточного хоста, имеющего доступ к защищённой сети, в которой размещён временный кластер Data Proc.
+
+Инициализация базы данных Hive Metastore осуществляется с помощью [инструмента schematool](https://cwiki.apache.org/confluence/display/Hive/Hive+Schema+Tool), который установлен в каталоге `/lib/hive/bin` мастер-узла кластера Data Proc. Пример команды инициализации приведён ниже:
+
+```bash
+/lib/hive/bin/schematool -dbType postgres -initSchema \
+    -url 'jdbc:postgresql://host:port/hive?targetServerType=master&ssl=true&sslmode=require' \
+    -userName 'hive' -passWord 'passw0rd'
+```
+
+Значение параметра `url` можно получить на странице управляемого сервиса PostgreSQL, нажав на кнопку "Подключится" в верхней правой части экрана, и выбрав вариант для Java. При этом необходимо учитывать, что атрибут `sslmode` в значении URL может потребовать замены со значения `verify-full`, используемого по умолчанию, на значение `require`, как в примере выше. Режим `verify-full` требует наличия на стороне клиента сертификата центра регистрации (CA Certificate), что требует дополнительной настройки, выходящей за рамки этой инструкции.
+
+После успешной инициализации базы данных инструмент schematool выводит следующие сообщения:
+
+```
+Initialization script completed
+schemaTool completed
+```
+
+Необходимо убедиться в отсутствии любых сообщений об ошибках, после чего инициализацию базы данных Hive Metastore можно считать завершённой.
+
 ## 3. Запуск кластеров Data Proc с использованием внешней базы данных Hive Metastore
 
 # Настройка внешнего Hive Metastore
