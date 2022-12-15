@@ -1,5 +1,7 @@
 #! /bin/sh
 
+# На сегодня кластер с Hive без HDFS и MapReduce может работать только как Hive Metastore!
+
 # Пример команд для создания кластера Data Proc под выделенный Metastore.
 # Предполагается, что уже созданы
 #  * бакет Object Storage,

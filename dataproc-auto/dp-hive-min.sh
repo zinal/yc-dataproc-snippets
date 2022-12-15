@@ -1,5 +1,8 @@
 #! /bin/sh
 
+# Минимальный кластер Hive требует HDFS, Yarn, Tez и Mapreduce.
+# При этом основной путь хранения может быть установлен в каталог в S3.
+
 # Пример команд для создания кластера Data Proc под выделенный Metastore.
 # Предполагается, что уже созданы
 #  * бакет Object Storage,
@@ -13,13 +16,13 @@ YC_SUBNET=default-ru-central1-b
 YC_BUCKET=dproc1
 YC_SA=dp1
 
-echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEe2Kv7hXKJHip4bvawkQ0n6/L6JcTrzUeZ4QqGGxm0bLe6hecoWZ68J9r5umgvFqNHGCEO868TAlxQKOf+aNus= zinal@gw1" >ssh-keys.tmp
+echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
   --version ${YC_VERSION} --ui-proxy \
-  --services hdfs,yarn,hive,tez \
+  --services hdfs,yarn,tez,mapreduce,hive \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s3-c2-m8',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="data",role='datanode',resource-preset='s3-c4-m16',disk-type='network-ssd-nonreplicated',disk-size=93,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
