@@ -24,7 +24,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --version ${YC_VERSION} --ui-proxy \
   --services hdfs,yarn,tez,mapreduce,hive,spark \
   --bucket ${YC_BUCKET} \
-  --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=150,hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=8,subnet-name=${YC_SUBNET} \
   --ssh-public-keys-file ssh-keys.tmp \
@@ -44,4 +44,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.hadoop.fs.s3a.committer.name=directory \
   --property spark:spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol \
   --property spark:spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter \
-  --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC'
+  --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/geesefs_mount.sh'
