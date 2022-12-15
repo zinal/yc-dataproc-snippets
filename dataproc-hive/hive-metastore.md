@@ -7,11 +7,11 @@
 Вместо использования встроенной базы данных Hive Metastore, на сегодня (до готовности в Yandex Cloud управляемого сервиса Hive Metastore) рекомендуется применять внешнюю базу данных, в виде сервиса [Yandex Managed Service for PostgreSQL](https://cloud.yandex.ru/services/managed-postgresql). Тем самым эффективно решаются вопросы отказоустойчивости, масштабирования и резервного копирования базы данных Hive Metastore. Время жизни метаданных в такой конфигурации превышает время существования отдельных кластеров Data Proc, и возникает возможность согласованного доступа из нескольких кластеров Data Proc к общему массиву данных, размещённому в [объектном хранилище Yandex Object Storage](https://cloud.yandex.ru/services/storage).
 
 Настройка внешней базы данных Hive Metastore выполняется в следующем порядке:
-1. Создание и настройка сервиса PostgreSQL
+1. Создание и настройка сервиса PostgreSQL для базы данных Hive Metastore
 2. Инициализация базы данных Hive Metastore
 3. Запуск кластеров Data Proc с использованием внешней базы данных Hive Metastore
 
-## 1. Создание и настройка сервиса PostgreSQL
+## 1. Создание и настройка сервиса PostgreSQL для базы данных Hive Metastore
 
 Сервис PostgreSQL в Yandex Cloud создаётся в соответствии с инструкциями в [официальной документации сервиса](https://cloud.yandex.ru/docs/managed-postgresql/operations/cluster-create).
 
@@ -87,7 +87,7 @@ ubuntu@rc1b-dataproc-m-v2vn8bjkhogp07t1:~$
     -userName 'hive' -passWord 'passw0rd'
 ```
 
-Значение параметра `url` можно получить на странице управляемого сервиса PostgreSQL, нажав на кнопку "Подключится" в верхней правой части экрана, и выбрав вариант для Java. При этом необходимо учитывать, что атрибут `sslmode` в значении URL может потребовать замены со значения `verify-full`, используемого по умолчанию, на значение `require`, как в примере выше. Режим `verify-full` требует наличия на стороне клиента сертификата центра регистрации (CA Certificate), что требует дополнительной настройки, выходящей за рамки этой инструкции.
+Значение параметра `url` можно получить на странице управляемого сервиса PostgreSQL, нажав на кнопку "Подключится" в верхней правой части экрана, и выбрав вариант для Java. При этом необходимо учитывать, что атрибут `sslmode` в значении URL может потребовать замены со значения `verify-full`, используемого по умолчанию, на значение `require`, как указано в примере команды выше. Режим `verify-full` требует наличия на стороне клиента сертификата центра регистрации (CA Certificate), что требует дополнительной настройки, выходящей за рамки этой инструкции.
 
 После успешной инициализации базы данных инструмент schematool выводит следующие сообщения:
 
@@ -98,7 +98,42 @@ schemaTool completed
 
 Необходимо убедиться в отсутствии любых сообщений об ошибках в выводе schematool, после чего инициализацию базы данных Hive Metastore можно считать завершённой.
 
+Если для инициализации базы данных Hive Metastore создавался временный кластер Data Proc, то его можно удалить средствами  Web-консоли либо следующей командой:
+
+```bash
+yc dataproc cluster delete hive-ms-init
+```
+
 ## 3. Запуск кластеров Data Proc с использованием внешней базы данных Hive Metastore
 
-# Настройка внешнего Hive Metastore
+Необходимые настройки для работы Apache Hive с использованием внешней базы данных Metastore описаны в [документации Hive](https://cwiki.apache.org/confluence/display/Hive/AdminManual+Metastore+Administration#AdminManualMetastoreAdministration-RemoteMetastoreDatabase). Настройки описывают параметры подключения к базе данных и включают в себя следуюшие свойства:
+* `javax.jdo.option.ConnectionURL` - JDBC URL для подключения к базе данных (см. предыдущий раздел и пояснения по формированию параметра `url` для инструмента schematool);
+* `javax.jdo.option.ConnectionDriverName` - имя класса JDBC драйвера (для PostgreSQL - значение `org.postgresql.Driver`);
+* `javax.jdo.option.ConnectionUserName` - логин пользователя для подключения (обычно значение `hive`);
+* `javax.jdo.option.ConnectionPassword` - пароль пользователя.
+
+Параметры компонентов Data Proc задаются с помощью свойств кластера, в данном случае применительно к компоненту `hive`. Ниже приведён пример команды создания автомасштабируемого кластера Data Proc, использующего внутренний сервис Hive Metastore и внешнюю базу данных Hive Metastore:
+
+```bash
+YC_SUBNET=default-ru-central1-b
+YC_BUCKET=dproc1
+yc dataproc cluster create hive-sample-cluster \
+  --zone ru-central1-b \
+  --service-account-name dp1 \
+  --version 2.0.58 --ui-proxy \
+  --services hdfs,yarn,tez,mapreduce,hive \
+  --bucket ${YC_BUCKET} \
+  --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=150,hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=8,subnet-name=${YC_SUBNET} \
+  --ssh-public-keys-file ssh-keys.tmp \
+  --property core:fs.s3a.committer.name=directory \
+  --property core:fs.s3a.committer.staging.conflict-mode=append \
+  --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
+  --property hive:hive.metastore.warehouse.dir=s3a://${YC_BUCKET}/warehouse \
+  --property hive:hive.exec.compress.output=true
+```
+
+
+# Настройка и использование внешнего сервиса Hive Metastore
 
