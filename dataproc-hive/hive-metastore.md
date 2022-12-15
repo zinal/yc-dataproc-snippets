@@ -124,16 +124,16 @@ yc dataproc cluster create hive-sample-cluster \
   --services hdfs,yarn,tez,mapreduce,hive \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=150,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd',disk-size=500,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=8,subnet-name=${YC_SUBNET} \
   --ssh-public-keys-file ssh-keys.tmp \
   --property core:fs.s3a.committer.name=directory \
   --property core:fs.s3a.committer.staging.conflict-mode=append \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
-  --property hive:javax.jdo.option.ConnectionURL='jdbc:postgresql://rc1a-i9gzawc9db9a516g.mdb.yandexcloud.net:6432,rc1b-aohkuuhqimb7cjty.mdb.yandexcloud.net:6432,rc1c-d9lg5uu7nc2duwx1.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require' \
+  --property hive:javax.jdo.option.ConnectionURL='jdbc:postgresql://host:port/hive?targetServerType=master&ssl=true&sslmode=require' \
   --property hive:javax.jdo.option.ConnectionDriverName=org.postgresql.Driver \
   --property hive:javax.jdo.option.ConnectionUserName=hive \
-  --property hive:javax.jdo.option.ConnectionPassword='chahle1Eiqu5BukieZoh' \
+  --property hive:javax.jdo.option.ConnectionPassword='passw0rd' \
   --property hive:hive.metastore.warehouse.dir=s3a://${YC_BUCKET}/warehouse \
   --property hive:hive.exec.compress.output=true
 ```
