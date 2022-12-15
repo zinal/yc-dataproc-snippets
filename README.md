@@ -1,4 +1,4 @@
-# Документы и примеры кода для работы с Yandex Data Proc
+# Материалы по Yandex Data Proc
 
 В этом репозитории собраны документы и различные примеры для работы с сервисом [Yandex Data Proc](https://cloud.yandex.ru/services/data-proc).
 
