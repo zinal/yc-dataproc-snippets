@@ -11,3 +11,11 @@
 ps -ef | grep metastore
 sudo ./profiler.sh -e wall -t -i 5ms -d 600 -f /tmp/out-run1.html 4675
 ```
+
+Логирование операций с бакетом:
+
+```bash
+aws s3api --endpoint-url=https://storage.yandexcloud.net put-bucket-logging --bucket dproc-wh --bucket-logging-status='{"LoggingEnabled": {"TargetBucket": "dproc-logs","TargetPrefix": "dproc-wh/"}}'
+
+aws s3api --endpoint-url=https://storage.yandexcloud.net get-bucket-logging --bucket dproc-wh
+```
