@@ -1,0 +1,13 @@
+# Скорость basic-queries и узкие места
+
+Распределение времени:
+1. Параллельное задание Spark: 11:29 - 11:43 (14 минут)
+2. Подтверждение S3 pending uploads: 11:43 - 11:47 (4 минуты)
+3. Регистрация партиций в Hive Metastore, включая сбор размеров через листинги S3: 11:47 - 11:58 (11 минут)
+
+Пробую профилировать Hive Metastore средствами [Async Profiler](https://github.com/jvm-profiling-tools/async-profiler#wall-clock-profiling).
+
+```bash
+ps -ef | grep metastore
+sudo ./profiler.sh -e wall -t -i 5ms -d 600 -f /tmp/out-run1.html 4675
+```
