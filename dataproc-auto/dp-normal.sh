@@ -11,9 +11,9 @@ YC_CLUSTER=normal-1
 YC_VERSION=2.0.58
 YC_ZONE=ru-central1-b
 YC_SUBNET=default-ru-central1-b
-YC_BUCKET=dproc2
+YC_BUCKET=dproc-wh
 YC_SA=dp1
-YC_MS_URL='jdbc:postgresql://rc1a-i9gzawc9db9a516g.mdb.yandexcloud.net:6432,rc1b-aohkuuhqimb7cjty.mdb.yandexcloud.net:6432,rc1c-d9lg5uu7nc2duwx1.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require'
+YC_MS_URL='jdbc:postgresql://rc1b-pntr3g0uume3q4ob.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require'
 YC_MS_PASS='chahle1Eiqu5BukieZoh'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
@@ -35,8 +35,10 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property hive:javax.jdo.option.ConnectionDriverName=org.postgresql.Driver \
   --property hive:javax.jdo.option.ConnectionUserName=hive \
   --property hive:javax.jdo.option.ConnectionPassword=${YC_MS_PASS} \
-  --property hive:hive.metastore.warehouse.dir=s3a://${YC_BUCKET}/warehouse \
+  --property hive:hive.metastore.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property hive:hive.exec.compress.output=true \
+  --property hive:hive.metastore.fshandler.threads=100 \
+  --property hive:datanucleus.connectionPool.maxPoolSize=100 \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
@@ -45,4 +47,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol \
   --property spark:spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter \
   --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
+  --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh,args='${YC_BUCKET}
