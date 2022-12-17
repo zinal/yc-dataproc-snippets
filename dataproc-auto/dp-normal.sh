@@ -31,6 +31,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:fs.s3a.committer.name=directory \
   --property core:fs.s3a.committer.staging.conflict-mode=append \
   --property core:fs.s3a.committer.threads=100 \
+  --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
   --property hive:javax.jdo.option.ConnectionURL=${YC_MS_URL} \
   --property hive:javax.jdo.option.ConnectionDriverName=org.postgresql.Driver \
