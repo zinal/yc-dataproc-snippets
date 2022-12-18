@@ -41,3 +41,31 @@ sudo jar ufv /usr/lib/hive/lib/hive-metastore-3.1.2.jar org/apache/hadoop/hive/m
 2022-12-18T16:22:52,003  INFO [pool-6-thread-4] metastore.HiveMetaStore: MVZ total partitions to be created: 575
 2022-12-18T16:23:02,079  INFO [pool-6-thread-4] metastore.HiveMetaStore: MVZ total method time: 10076, push=1205, fetch=4471, addParts=4072
 ```
+
+Расширенная статистика, второй прогон:
+```
+2022-12-18T17:06:13,833  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:06:38,984  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 25151, push=1452, fetch=15918, addParts=7182, future.cr=411260, future.it=902169
+2022-12-18T17:06:39,721  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:07:03,053  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 23332, push=1104, fetch=14075, addParts=7604, future.cr=309308, future.it=784154
+2022-12-18T17:07:03,763  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:07:26,114  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 22351, push=908, fetch=14421, addParts=6479, future.cr=350760, future.it=788525
+2022-12-18T17:07:26,801  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:07:49,761  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 22960, push=861, fetch=14910, addParts=6631, future.cr=345149, future.it=792183
+2022-12-18T17:07:50,468  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:08:12,158  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 21690, push=1338, fetch=13760, addParts=6063, future.cr=351311, future.it=725624
+2022-12-18T17:08:12,836  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:08:35,090  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 22254, push=856, fetch=14383, addParts=6469, future.cr=364344, future.it=761272
+2022-12-18T17:08:35,828  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:08:57,862  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 22034, push=861, fetch=14481, addParts=6177, future.cr=320521, future.it=785614
+2022-12-18T17:08:58,529  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:09:13,172  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 14643, push=2343, fetch=5155, addParts=6609, future.cr=224379, future.it=177753
+2022-12-18T17:09:13,824  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:09:33,165  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 19341, push=2213, fetch=9972, addParts=6623, future.cr=207543, future.it=326638
+2022-12-18T17:09:33,855  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:09:52,885  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 19030, push=2419, fetch=9757, addParts=6324, future.cr=224478, future.it=142353
+2022-12-18T17:09:53,556  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 1000
+2022-12-18T17:10:09,854  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 16298, push=2386, fetch=4870, addParts=8519, future.cr=102590, future.it=108391
+2022-12-18T17:10:10,270  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total partitions to be created: 575
+2022-12-18T17:10:19,634  INFO [pool-6-thread-57] metastore.HiveMetaStore: MVZ total method time: 9364, push=1287, fetch=4288, addParts=3483, future.cr=30510, future.it=39485
+```
