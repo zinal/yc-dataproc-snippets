@@ -61,6 +61,8 @@ CREATE TABLE megatab (
   d varchar(20) not null
 ) PARTITIONED BY (tv_year INT, tv_month INT, tv_day INT)
   STORED AS parquet;
+  
+SELECT COUNT(*) FROM (SELECT DISTINCT d FROM demo1_uuid1g_v) x;
 
 INSERT INTO megatab
 SELECT /*+ REPARTITION(100,tv_year,tv_month,tv_day) */
