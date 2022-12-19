@@ -4,11 +4,11 @@ S3A Committers - входящий в состав [Apache Hadoop](https://hadoop
 
 В современных условиях потребность в специальном алгоритме для записи в объектное хранилище возникает из-за особенностей протокола S3, который не поддерживает (и не может поддерживать) атомарную операцию переименования файлов и каталогов.
 
-> Документация на S3A Committers дополнительно указывает на возможную неконсистентность листингов S3, и рекомендует применение компонента S3Guard для обеспечения стабильной работы. В современных S3 хранилищах (включая [Yandex Object Storage](https://cloud.yandex.ru/services/storage)) эта проблема не проявляется, и использование S3Guard не рекомендовано при работе с Yandex Data Proc.
+> *Примечание* Документация на S3A Committers дополнительно указывает на возможную неконсистентность листингов S3, и рекомендует применение компонента S3Guard для обеспечения стабильной работы. В современных S3 хранилищах (включая [Yandex Object Storage](https://cloud.yandex.ru/services/storage)) эта проблема не проявляется, и использование S3Guard не рекомендовано при работе с Yandex Data Proc.
 
 Подробное описание логики работы и использования S3A Committers приведено в соответствующих разделах [документации Apache Hadoop](https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/committers.html), а также [документации Apache Spark](https://spark.apache.org/docs/3.0.3/cloud-integration.html).
 
-> S3A Committers не используются и не требуются для работы с таблицами, управляемыми средствами библиотеки [DeltaLake](https://delta.io/), которая реализует собственную логику для работы с данными в объектном хранилище.
+> *Примечание* S3A Committers не используются и не требуются для работы с таблицами, управляемыми средствами библиотеки [DeltaLake](https://delta.io/), которая реализует собственную логику для работы с данными в объектном хранилище.
 
 ## Условия применения и режимы работы S3A Committers
 
@@ -52,4 +52,16 @@ S3A Committers - входящий в состав [Apache Hadoop](https://hadoop
 
 ## Настройки для оптимизации производительности записи в S3
 
-TODO
+При доступе к данным в объектном хранилище из заданий Spark рекомендованы следующие настройки:
+* `spark.sql.hive.metastorePartitionPruning true`
+
+Для работы в заданиях Spark с данными в формате Parquet:
+* `spark.hadoop.parquet.enable.summary-metadata false`
+* `spark.sql.parquet.mergeSchema false`
+* `spark.sql.parquet.filterPushdown true`
+
+Для работы в заданиях Spark с данными в формате Orc:
+* `spark.sql.orc.filterPushdown true`
+* `spark.sql.orc.splits.include.file.footer true`
+* `spark.sql.orc.cache.stripe.details.size 10000`
+
