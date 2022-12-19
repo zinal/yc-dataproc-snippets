@@ -5,6 +5,7 @@
 Структура основных материалов:
 * [Инструкция по диагностике работы Spark SQL](dataproc-spark-diag/README.md)
 * [Инструкция по настройке внешней базы данных Apache Hive Metastore](dataproc-hive/hive-metastore.md)
+* [Настройка S3A Committers для оптимизации записи в Yandex Object Storage](dataproc-s3a-committers/README.md)
 
 Примеры вспомогательных скриптов и программ:
 * [Раскраска вычислительных ресурсов Data Proc](dp-compute-colorizer/)
