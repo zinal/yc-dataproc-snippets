@@ -65,3 +65,14 @@ S3A Committers - входящий в состав [Apache Hadoop](https://hadoop
 * `spark.sql.orc.splits.include.file.footer true`
 * `spark.sql.orc.cache.stripe.details.size 10000`
 
+```
+core:fs.s3a.connection.maximum: "500"
+core:fs.s3a.connection.timeout: "1200000"
+core:fs.s3a.max.total.tasks: "500"
+core:fs.s3a.threads.core: "500"
+core:fs.s3a.threads.max: "500"
+core:fs.s3a.committer.threads=100
+spark:spark.sql.addPartitionInBatch.size=1000
+hive:datanucleus.connectionPool.maxPoolSize=100
+hive:hive.metastore.fshandler.threads=100
+```
