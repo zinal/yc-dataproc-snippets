@@ -28,6 +28,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=10,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
   --ssh-public-keys-file ssh-keys.tmp \
+  --property dataproc:hive.thrift.impl=spark \
   --property core:fs.s3a.committer.name=directory \
   --property core:fs.s3a.committer.staging.conflict-mode=append \
   --property core:fs.s3a.committer.threads=100 \
