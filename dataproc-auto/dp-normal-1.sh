@@ -8,7 +8,7 @@
 #  * база данных PostgreSQL
 
 YC_CLUSTER=normal-1
-YC_VERSION=2.0.58
+YC_VERSION=2.0
 YC_ZONE=ru-central1-b
 YC_SUBNET=default-ru-central1-b
 YC_BUCKET=dproc-wh
