@@ -22,9 +22,9 @@ chown -R root:root ${DSTDIR}
 
 Для копирования используется режим `copyToLocal` утилиты `dfs` программного обеспечения Hadoop. Это позволяет не устанавливать дополнительное программное обеспечение (клиента AWS CLI или утилиту `s3fs`) на кластер Data Proc без реальной необходимости.
 
-Если разместить указанный выше скрипт инициализации в бакете `dproc-code` под именем `/init-scripts/init-depjars.sh`, то при создании кластера опцию для вызова скрипта инициализации необходимо будет указать через параметр `initialization-action`. При этом для подключения необходимых JAR-библиотек во все задания Spark можно воспользоваться свойствами `spark.driver.extraClassPath` и `spark.executor.extraClassPath`.
+Если разместить указанный выше скрипт инициализации в бакете `dproc-code` под именем `/init-scripts/init-depjars.sh`, то при создании кластера опцию для вызова скрипта инициализации необходимо будет указать через параметр `initialization-action`, как показано в примере ниже.
 
-> Примечание. Свойство `spark.jars` может быть использовано вместо устаревших свойств `spark.*.extraClassPath`, но оно переопределяется при запуске заданий средствами Apache Livy, в результате чего централизованно устанавливаемая настройка этого свойства при запуске через Apache Livy не работает.
+Для подключения необходимых JAR-библиотек во все задания Spark можно воспользоваться свойствами `spark.driver.extraClassPath` и `spark.executor.extraClassPath`.
 
 ```bash
 yc dataproc cluster create ${YC_CLUSTER} \
@@ -38,3 +38,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.executor.extraClassPath=/opt/depjars/delta-core_2.12-0.8.0.jar \
   --initialization-action 'uri=s3a://dproc-code/init-scripts/init-depjars.sh'
 ```
+
+> Примечание. Свойство `spark.jars` может быть использовано вместо устаревших свойств `spark.*.extraClassPath`, но оно переопределяется при запуске заданий средствами Apache Livy, в результате чего централизованно устанавливаемая настройка этого свойства при запуске через Apache Livy не работает.
