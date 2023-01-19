@@ -9,8 +9,8 @@
 
 YC_CLUSTER=normal-1
 YC_VERSION=2.0
-YC_ZONE=ru-central1-b
-YC_SUBNET=default-ru-central1-b
+YC_ZONE=ru-central1-c
+YC_SUBNET=default-ru-central1-c
 YC_BUCKET=dproc-wh
 YC_SA=dp1
 YC_MS_URL='jdbc:postgresql://rc1b-pntr3g0uume3q4ob.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require'
@@ -22,7 +22,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
   --version ${YC_VERSION} --ui-proxy \
-  --services hdfs,yarn,tez,mapreduce,hive,spark \
+  --services hdfs,yarn,tez,mapreduce,hive,spark,livy \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \

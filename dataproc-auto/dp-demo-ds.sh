@@ -11,12 +11,18 @@ YC_CLUSTER=dsdemo-1
 YC_VERSION=2.0
 YC_ZONE=ru-central1-c
 YC_SUBNET=default-ru-central1-c
-YC_BUCKET=dprocwh1
-YC_SA=dp1
-YC_MS_URL='jdbc:postgresql://gw0:5432/hivems?ssl=true&sslmode=require'
-YC_MS_PASS='Saikeigoowik2Ahziejah5Eizu2Ooh'
 
-echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIskJBTih+KMzR4FfExdGej5fRBk9uBE6m+oTDEuHnwEBFuqIl6+1OaomTCJhKq8yqYSThIc86/CGIVTWvg7T8A= zinal@gw0" >ssh-keys.tmp
+#YC_BUCKET=dprocwh1
+#YC_SA=dp1
+#YC_MS_URL='jdbc:postgresql://gw0:5432/hivems?ssl=true&sslmode=require'
+#YC_MS_PASS='Saikeigoowik2Ahziejah5Eizu2Ooh'
+#echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIskJBTih+KMzR4FfExdGej5fRBk9uBE6m+oTDEuHnwEBFuqIl6+1OaomTCJhKq8yqYSThIc86/CGIVTWvg7T8A= zinal@gw0" >ssh-keys.tmp
+
+YC_BUCKET=dproc-wh
+YC_SA=dp1
+YC_MS_URL='jdbc:postgresql://rc1b-pntr3g0uume3q4ob.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require'
+YC_MS_PASS='chahle1Eiqu5BukieZoh'
+echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
@@ -26,7 +32,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=0,max-hosts-count=10,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
+  --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=10,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property dataproc:hive.thrift.impl=spark \
   --property core:fs.s3a.committer.name=directory \
@@ -53,7 +59,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --property spark:spark.driver.extraClassPath=s3a://dproc/jars/delta-core_2.12-0.8.0.jar \
-  --property spark:spark.executor.extraClassPath=s3a://dproc/jars/delta-core_2.12-0.8.0.jar \
+  --property spark:spark.driver.extraClassPath=/opt/depjars/delta-core_2.12-0.8.0.jar \
+  --property spark:spark.executor.extraClassPath=/opt/depjars/delta-core_2.12-0.8.0.jar \
   --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension
+  --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init-depjars.sh'
