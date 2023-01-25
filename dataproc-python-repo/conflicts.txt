@@ -1,0 +1,241 @@
+Solving environment: failed with initial frozen solve. Retrying with flexible solve.
+Solving environment: \ 
+Found conflicts! Looking for incompatible packages.
+This can take several minutes.  Press CTRL-C to abort.
+failed                                                                                                                                                                                             
+
+UnsatisfiableError: The following specifications were found
+to be incompatible with the existing python installation in your environment:
+
+Specifications:
+
+  - catboost -> python[version='2.7.*|>=2.7,<2.8.0a0|>=3.11,<3.12.0a0|>=3.5,<3.6.0a0|>=3.6,<3.7.0a0']
+  - lightgbm -> python[version='>=3.10,<3.11.0a0|>=3.11,<3.12.0a0']
+  - prophet -> python[version='>=2.7,<2.8.0a0|>=3.6,<3.7.0a0|>=3.7,<3.8.0a0']
+
+Your python: python=3.8.10
+
+If python is on the left-most side of the chain, that's the version you've asked for.
+When python appears to the right, that indicates that the thing on the left is somehow
+not available for the python version you are constrained to. Note that conda will not
+change your python version to a different minor version unless you explicitly specify
+that.
+
+The following specifications were found to be incompatible with each other:
+
+Output in format: Requested package -> Available versions
+
+Package _libgcc_mutex conflicts for:
+psycopg2 -> libgcc-ng[version='>=12'] -> _libgcc_mutex[version='*|0.1',build='main|conda_forge|main']
+prophet -> libgcc-ng[version='>=12'] -> _libgcc_mutex==0.1=conda_forge
+python=3.8.10 -> libgcc-ng[version='>=9.4.0'] -> _libgcc_mutex[version='*|0.1',build='main|conda_forge|main']
+lightgbm -> _openmp_mutex[version='>=4.5'] -> _libgcc_mutex[version='*|0.1',build='main|conda_forge|main']
+
+Package libgfortran5 conflicts for:
+seaborn -> scipy[version='>=1.0.1'] -> libgfortran5[version='>=10.4.0|>=11.3.0|>=11.2.0']
+lightgbm -> scipy -> libgfortran5[version='>=10.4.0|>=11.3.0|>=11.2.0']
+catboost -> scipy -> libgfortran5[version='>=10.4.0|>=11.3.0|>=11.2.0']
+
+Package libuuid conflicts for:
+psycopg2 -> python[version='>=3.11,<3.12.0a0'] -> libuuid[version='>=2.32.1,<3.0a0']
+catboost -> python[version='>=3.10,<3.11.0a0'] -> libuuid[version='>=2.32.1,<3.0a0']
+seaborn -> python[version='>=3.6'] -> libuuid[version='>=2.32.1,<3.0a0']
+prophet -> python[version='>=3.11,<3.12.0a0'] -> libuuid[version='>=2.32.1,<3.0a0']
+
+Package libzlib conflicts for:
+psycopg2 -> libpq[version='>=15.1,<16.0a0'] -> libzlib[version='>=1.2.12,<1.3.0a0|>=1.2.13,<1.3.0a0']
+catboost -> python[version='>=3.10,<3.11.0a0'] -> libzlib[version='>=1.2.12,<1.3.0a0|>=1.2.13,<1.3.0a0']
+seaborn -> python[version='>=3.6'] -> libzlib[version='>=1.2.12,<1.3.0a0|>=1.2.13,<1.3.0a0']
+python=3.8.10 -> sqlite[version='>=3.36.0,<4.0a0'] -> libzlib[version='1.2.11|1.2.12|1.2.12|1.2.12|1.2.12|1.2.12|1.2.13|>=1.2.11,<1.3.0a0|>=1.2.12,<1.3.0a0|>=1.2.13,<1.3.0a0',build='h166bdaf_0|h166bdaf_2|h166bdaf_4|h166bdaf_3|h166bdaf_1|h36c2ea0_1012']
+prophet -> python[version='>=3.11,<3.12.0a0'] -> libzlib[version='>=1.2.12,<1.3.0a0|>=1.2.13,<1.3.0a0']
+
+Package pandas conflicts for:
+catboost -> pandas[version='>=0.24.0']
+prophet -> pandas[version='>=1.0.4']
+seaborn -> pandas[version='>=0.22.0']
+
+Package mkl_fft conflicts for:
+seaborn -> numpy[version='>=1.13.3'] -> mkl_fft
+catboost -> numpy[version='>=1.16.0'] -> mkl_fft
+lightgbm -> numpy -> mkl_fft
+prophet -> numpy[version='>=1.15.4'] -> mkl_fft
+
+Package setuptools conflicts for:
+python=3.8.10 -> pip -> setuptools
+prophet -> matplotlib-base[version='>=2.0.0'] -> setuptools
+catboost -> matplotlib-base -> setuptools
+
+Package python_abi conflicts for:
+prophet -> python_abi[version='3.10.*|3.11.*|3.8.*|3.9.*',build='*_cp311|*_cp38|*_cp39|*_cp310']
+psycopg2 -> python_abi[version='3.10.*|3.11.*|3.8.*|3.9.*|3.7.*',build='*_cp37m|*_cp311|*_cp38|*_cp39|*_cp310']
+lightgbm -> numpy -> python_abi[version='3.10.*|3.11.*|3.8|3.9',build='*_pypy39_pp73|*_pypy38_pp73|*_cp311|*_cp310']
+catboost -> python_abi[version='3.10.*|3.7.*|3.8.*|3.9.*',build='*_cp39|*_cp38|*_cp37m|*_cp310']
+lightgbm -> python_abi[version='3.6.*|3.7.*|3.8.*|3.9.*',build='*_cp36m|*_cp37m|*_cp38|*_cp39']
+prophet -> matplotlib-base[version='>=2.0.0'] -> python_abi[version='3.8|3.9',build='*_pypy39_pp73|*_pypy38_pp73']
+seaborn -> numpy[version='>=1.13.3'] -> python_abi[version='3.10.*|3.11.*|3.8|3.9|3.9.*|3.8.*',build='*_cp310|*_pypy39_pp73|*_pypy38_pp73|*_cp311|*_cp39|*_cp38']
+catboost -> matplotlib-base -> python_abi[version='3.11.*|3.8|3.9',build='*_pypy39_pp73|*_pypy38_pp73|*_cp311']
+
+Package python-dateutil conflicts for:
+prophet -> python-dateutil[version='>=2.8.0']
+prophet -> matplotlib-base[version='>=2.0.0'] -> python-dateutil[version='>=2.7.3|>=2.7|>=2.8.1']
+
+Package numpy conflicts for:
+prophet -> matplotlib-base[version='>=2.0.0'] -> numpy[version='>=1.14.6,<2.0a0|>=1.19|>=1.20.3,<2.0a0|>=1.23.5,<2.0a0|>=1.21.6,<2.0a0|>=1.16.6,<2.0a0']
+prophet -> numpy[version='>=1.15.4']
+
+Package kiwisolver conflicts for:
+catboost -> matplotlib-base -> kiwisolver[version='>=1.0.1']
+prophet -> matplotlib-base[version='>=2.0.0'] -> kiwisolver[version='>=1.0.1']The following specifications were found to be incompatible with your system:
+
+  - feature:/linux-64::__glibc==2.31=0
+  - feature:|@/linux-64::__glibc==2.31=0
+  - lightgbm -> libgcc-ng[version='>=9.3.0'] -> __glibc[version='>=2.17']
+  - psycopg2 -> libgcc-ng[version='>=9.4.0'] -> __glibc[version='>=2.17']
+
+Your installed version is: 2.31
+
+
+
+
+    package                    |            build
+    ---------------------------|-----------------
+    arviz-0.11.2               |     pyhd8ed1ab_0         1.4 MB  conda-forge
+    binutils_impl_linux-64-2.39|       he00db2b_1         4.7 MB  conda-forge
+    binutils_linux-64-2.39     |      h5fc0e48_11          24 KB  conda-forge
+    ca-certificates-2022.12.7  |       ha878542_0         143 KB  conda-forge
+    certifi-2022.12.7          |     pyhd8ed1ab_0         147 KB  conda-forge
+    cftime-1.6.0               |   py38h3ec907f_0         226 KB  conda-forge
+    conda-22.11.1              |   py38h578d9bd_1         905 KB  conda-forge
+    convertdate-2.4.0          |     pyhd8ed1ab_0          38 KB  conda-forge
+    curl-7.86.0                |       h5eee18b_0          87 KB
+    ephem-4.1.3                |   py38h0a891b7_4         1.4 MB  conda-forge
+    gcc_impl_linux-64-9.5.0    |      h99780fb_19        43.5 MB  conda-forge
+    gcc_linux-64-9.5.0         |      h4258300_11          25 KB  conda-forge
+    gxx_impl_linux-64-9.5.0    |      h99780fb_19        10.6 MB  conda-forge
+    gxx_linux-64-9.5.0         |      h43f449f_11          25 KB  conda-forge
+    hdf4-4.2.15                |       h10796ff_3         950 KB  conda-forge
+    hdf5-1.12.1                |nompi_h2750804_100         3.5 MB  conda-forge
+    hijri-converter-2.2.4      |     pyhd8ed1ab_0          18 KB  conda-forge
+    holidays-0.18              |     pyhd8ed1ab_0         105 KB  conda-forge
+    importlib_metadata-4.11.3  |       hd8ed1ab_1           4 KB  conda-forge
+    kernel-headers_linux-64-2.6.32|      he073ed8_15         707 KB  conda-forge
+    korean_lunar_calendar-0.3.1|     pyhd8ed1ab_0          12 KB  conda-forge
+    ld_impl_linux-64-2.39      |       hcc3a1bd_1         675 KB  conda-forge
+    libgcc-devel_linux-64-9.5.0|      h0a57e50_19         4.0 MB  conda-forge
+    libnetcdf-4.8.1            |nompi_hb3fd0d9_101         1.5 MB  conda-forge
+    libsanitizer-9.5.0         |      h2f262e1_19         6.9 MB  conda-forge
+    libstdcxx-devel_linux-64-9.5.0|      h0a57e50_19         9.9 MB  conda-forge
+    libzip-1.8.0               |       h4de3113_1         126 KB  conda-forge
+    lunarcalendar-0.0.9        |             py_0          20 KB  conda-forge
+    netcdf4-1.5.8              |nompi_py38h2823cc8_101         556 KB  conda-forge
+    prophet-1.0.1              |   py38hd0cf306_3         673 KB  conda-forge
+    pymeeus-0.5.12             |     pyhd8ed1ab_0         507 KB  conda-forge
+    pystan-2.19.1.1            |   py38h1abd341_3        17.3 MB  conda-forge
+    sysroot_linux-64-2.12      |      he073ed8_15        31.4 MB  conda-forge
+    xarray-2022.6.0            |     pyhd8ed1ab_0         695 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:       142.5 MB
+
+
+Collecting package metadata (repodata.json): done                                                                                                                                                  
+Solving environment: done                                                                                                                                                                          
+                                                                                                                                                                                                   
+## Package Plan ##                                                                                                                                                                                 
+                                                                                                                                                                                                   
+  environment location: /opt/conda                                                                                                                                                                 
+                                                                                                                                                                                                   
+  added / updated specs:                                                                                                                                                                           
+    - lightgbm                                                                                                                                                                                     
+    - prophet                                                                                                                                                                                      
+    - psycopg2                                                                                                                                                                                     
+    - seaborn                                                                                                                                                                                      
+                                                                                                                                                                                                   
+                                                                                                                                                                                                   
+The following packages will be downloaded:                                                                                                                                                         
+                                                                                                                                                                                                   
+    package                    |            build                                                                                                                                                  
+    ---------------------------|-----------------                                                                                                                                                  
+    arviz-0.11.2               |     pyhd8ed1ab_0         1.4 MB  conda-forge                                                                                                                      
+    binutils_impl_linux-64-2.39|       he00db2b_1         4.7 MB  conda-forge                                                                                                                      
+    binutils_linux-64-2.39     |      h5fc0e48_11          24 KB  conda-forge                                                                                                                      
+    cftime-1.6.0               |   py38h3ec907f_0         226 KB  conda-forge                                                                                                                      
+    convertdate-2.4.0          |     pyhd8ed1ab_0          38 KB  conda-forge
+    curl-7.86.0                |       h5eee18b_0          87 KB
+    ephem-4.1.3                |   py38h0a891b7_4         1.4 MB  conda-forge
+    gcc_impl_linux-64-9.5.0    |      h99780fb_19        43.5 MB  conda-forge
+    gcc_linux-64-9.5.0         |      h4258300_11          25 KB  conda-forge
+    gxx_impl_linux-64-9.5.0    |      h99780fb_19        10.6 MB  conda-forge
+    gxx_linux-64-9.5.0         |      h43f449f_11          25 KB  conda-forge
+    hdf4-4.2.15                |       h10796ff_3         950 KB  conda-forge
+    hdf5-1.12.1                |nompi_h2750804_100         3.5 MB  conda-forge
+    hijri-converter-2.2.4      |     pyhd8ed1ab_0          18 KB  conda-forge
+    holidays-0.18              |     pyhd8ed1ab_0         105 KB  conda-forge
+    importlib_metadata-4.11.3  |       hd8ed1ab_1           4 KB  conda-forge
+    kernel-headers_linux-64-2.6.32|      he073ed8_15         707 KB  conda-forge
+    korean_lunar_calendar-0.3.1|     pyhd8ed1ab_0          12 KB  conda-forge
+    ld_impl_linux-64-2.39      |       hcc3a1bd_1         675 KB  conda-forge
+    libgcc-devel_linux-64-9.5.0|      h0a57e50_19         4.0 MB  conda-forge
+    libnetcdf-4.8.1            |nompi_hb3fd0d9_101         1.5 MB  conda-forge
+    libpq-13.3                 |       hd57d9b9_0         2.7 MB  conda-forge
+    libsanitizer-9.5.0         |      h2f262e1_19         6.9 MB  conda-forge
+    libstdcxx-devel_linux-64-9.5.0|      h0a57e50_19         9.9 MB  conda-forge
+    libzip-1.8.0               |       h4de3113_1         126 KB  conda-forge
+    lightgbm-3.3.2             |   py38h709712a_0         1.8 MB  conda-forge
+    lunarcalendar-0.0.9        |             py_0          20 KB  conda-forge
+    netcdf4-1.5.8              |nompi_py38h2823cc8_101         556 KB  conda-forge
+    patsy-0.5.3                |     pyhd8ed1ab_0         189 KB  conda-forge
+    prophet-1.0.1              |   py38hd0cf306_3         673 KB  conda-forge
+    psycopg2-2.9.2             |   py38h497a2fe_0         180 KB  conda-forge
+    pymeeus-0.5.12             |     pyhd8ed1ab_0         507 KB  conda-forge
+    pystan-2.19.1.1            |   py38h1abd341_3        17.3 MB  conda-forge
+    seaborn-0.12.2             |       hd8ed1ab_0           6 KB  conda-forge
+    seaborn-base-0.12.2        |     pyhd8ed1ab_0         226 KB  conda-forge
+    statsmodels-0.13.2         |   py38h6c62de6_0        11.5 MB  conda-forge
+    sysroot_linux-64-2.12      |      he073ed8_15        31.4 MB  conda-forge
+    xarray-2022.6.0            |     pyhd8ed1ab_0         695 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:       158.0 MB
+
+The following NEW packages will be INSTALLED:
+
+  arviz              conda-forge/noarch::arviz-0.11.2-pyhd8ed1ab_0 
+  binutils_impl_lin~ conda-forge/linux-64::binutils_impl_linux-64-2.39-he00db2b_1 
+  binutils_linux-64  conda-forge/linux-64::binutils_linux-64-2.39-h5fc0e48_11 
+  cftime             conda-forge/linux-64::cftime-1.6.0-py38h3ec907f_0 
+  convertdate        conda-forge/noarch::convertdate-2.4.0-pyhd8ed1ab_0 
+  curl               pkgs/main/linux-64::curl-7.86.0-h5eee18b_0 
+  ephem              conda-forge/linux-64::ephem-4.1.3-py38h0a891b7_4 
+  gcc_impl_linux-64  conda-forge/linux-64::gcc_impl_linux-64-9.5.0-h99780fb_19 
+  gcc_linux-64       conda-forge/linux-64::gcc_linux-64-9.5.0-h4258300_11 
+  gxx_impl_linux-64  conda-forge/linux-64::gxx_impl_linux-64-9.5.0-h99780fb_19 
+  gxx_linux-64       conda-forge/linux-64::gxx_linux-64-9.5.0-h43f449f_11 
+  hdf4               conda-forge/linux-64::hdf4-4.2.15-h10796ff_3 
+  hdf5               conda-forge/linux-64::hdf5-1.12.1-nompi_h2750804_100 
+  hijri-converter    conda-forge/noarch::hijri-converter-2.2.4-pyhd8ed1ab_0 
+  holidays           conda-forge/noarch::holidays-0.18-pyhd8ed1ab_0 
+  importlib_metadata conda-forge/noarch::importlib_metadata-4.11.3-hd8ed1ab_1 
+  kernel-headers_li~ conda-forge/noarch::kernel-headers_linux-64-2.6.32-he073ed8_15 
+  korean_lunar_cale~ conda-forge/noarch::korean_lunar_calendar-0.3.1-pyhd8ed1ab_0 
+  libgcc-devel_linu~ conda-forge/linux-64::libgcc-devel_linux-64-9.5.0-h0a57e50_19 
+  libnetcdf          conda-forge/linux-64::libnetcdf-4.8.1-nompi_hb3fd0d9_101 
+  libpq              conda-forge/linux-64::libpq-13.3-hd57d9b9_0 
+  libsanitizer       conda-forge/linux-64::libsanitizer-9.5.0-h2f262e1_19 
+  libstdcxx-devel_l~ conda-forge/linux-64::libstdcxx-devel_linux-64-9.5.0-h0a57e50_19 
+  libzip             conda-forge/linux-64::libzip-1.8.0-h4de3113_1 
+  lightgbm           conda-forge/linux-64::lightgbm-3.3.2-py38h709712a_0 
+  lunarcalendar      conda-forge/noarch::lunarcalendar-0.0.9-py_0 
+  netcdf4            conda-forge/linux-64::netcdf4-1.5.8-nompi_py38h2823cc8_101 
+  patsy              conda-forge/noarch::patsy-0.5.3-pyhd8ed1ab_0 
+  prophet            conda-forge/linux-64::prophet-1.0.1-py38hd0cf306_3 
+  psycopg2           conda-forge/linux-64::psycopg2-2.9.2-py38h497a2fe_0 
+  pymeeus            conda-forge/noarch::pymeeus-0.5.12-pyhd8ed1ab_0 
+  pystan             conda-forge/linux-64::pystan-2.19.1.1-py38h1abd341_3 
+  seaborn-base       conda-forge/noarch::seaborn-base-0.12.2-pyhd8ed1ab_0 
+  statsmodels        conda-forge/linux-64::statsmodels-0.13.2-py38h6c62de6_0 
+  sysroot_linux-64   conda-forge/noarch::sysroot_linux-64-2.12-he073ed8_15 
+  xarray             conda-forge/noarch::xarray-2022.6.0-pyhd8ed1ab_0 
+
+The following packages will be UPDATED:
+
+  ld_impl_linux-64   pkgs/main::ld_impl_linux-64-2.38-h118~ --> conda-forge::ld_impl_linux-64-2.39-hcc3a1bd_1 
+  seaborn                    pkgs/main::seaborn-0.10.0-py_0 --> conda-forge::seaborn-0.12.2-hd8ed1ab_0 

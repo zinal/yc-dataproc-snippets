@@ -1,4 +1,7 @@
 
+https://pypi.org/project/python-pypi-mirror/
+
+
 Временно: установить `conda-mirror` из исходных кодов с наложенным патчем для поддержки опции ограничения количества извлекаемых версий конкретного пакета.
 
 ```bash
@@ -76,14 +79,34 @@ include_depends: True
 
 ```bash
 mkdir conda1
-conda-mirror --upstream-channel conda-forge --target-directory conda1 --config conda-mirror-conf.yaml --platform linux-64 --num-threads 50 --latest 10
+conda-mirror --upstream-channel conda-forge --target-directory conda1 --config conda-mirror-conf.yaml --platform linux-64,noarch --num-threads 50 --latest 10
 cp conda1/linux-64/repodata.json conda1/linux-64/current_repodata.json
 cp conda1/linux-64/repodata.json.bz2 conda1/linux-64/current_repodata.json.bz2
+cp conda1/noarch/repodata.json conda1/noarch/current_repodata.json
+cp conda1/noarch/repodata.json.bz2 conda1/noarch/current_repodata.json.bz2
 ```
 
 Скопировать скачанные пакеты в каталог бакета объектного хранилища:
 
 ```bash
 sudo -u hdfs hdfs dfs -mkdir s3a://dproc-repo/repos/
-sudo -u hdfs hdfs dfs -copyFromLocal conda1/ s3a://dproc-repo/repos/
+sudo -u hdfs hdfs dfs -copyFromLocal -d -t 20 conda1/ s3a://dproc-repo/repos/
 ```
+
+Проверить наличие одного из пакетов в новом репозитории:
+
+```bash
+conda clean -i -y
+conda search -c https://dproc-repo.website.yandexcloud.net/repos/conda1 --override-channels catboost
+```
+
+
+Установить пакеты:
+
+```bash
+conda clean -i -y
+conda install -c https://dproc-repo.website.yandexcloud.net/repos/conda1 --override-channels catboost lightgbm nltk prophet psycopg2 seaborn unidecode
+```
+
+
+cp -rlp conda conda.orig
