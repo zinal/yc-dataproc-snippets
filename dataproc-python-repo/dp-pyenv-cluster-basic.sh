@@ -1,12 +1,12 @@
 #! /bin/sh
 
 # Кластер, использующий подготовленное окружение Data Proc.
-# Образ /opt/conda загружается скриптом инициализации из S3 бакета.
+# Образ /opt/conda обновляется скриптом инициализации на основе локального репозитория, размещённого в S3 бакете.
 
 . ./dp-pyenv-options.sh
 
 YC_CLUSTER=pyenv-demo2
-YC_CONDA=s3a://dproc-repo/repos/CondaImage2.squashfs
+YC_REPO=https://dproc-repo.website.yandexcloud.net/repos/conda1
 
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
@@ -34,6 +34,6 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init-conda-squashfs.sh,args='${YC_CONDA}
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init-conda-basic.sh,args='${YC_REPO}
 
 # End Of File
