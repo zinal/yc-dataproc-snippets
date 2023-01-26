@@ -1,112 +1,75 @@
 
 https://pypi.org/project/python-pypi-mirror/
 
-
-Временно: установить `conda-mirror` из исходных кодов с наложенным патчем для поддержки опции ограничения количества извлекаемых версий конкретного пакета.
-
-```bash
-git clone https://github.com/zinal/conda-mirror.git
-cd conda-mirror
-pip3 install -r requirements.txt
-python3 setup.py install
-conda-mirror --help
-```
-
-Проверка актуальной версии пакета, которая может быть установлена с учетом особенностей окружения Data Proc:
-
-```
-root@rc1c-dataproc-g-1157fe-irow:~# conda install unidecode
-Collecting package metadata (current_repodata.json): done
-Solving environment: done
-
-## Package Plan ##
-
-  environment location: /opt/conda
-
-  added / updated specs:
-    - unidecode
-
-
-The following packages will be downloaded:
-
-    package                    |            build
-    ---------------------------|-----------------
-    ca-certificates-2023.01.10 |       h06a4308_0         120 KB
-    unidecode-1.2.0            |     pyhd3eb1b0_0         155 KB
-    ------------------------------------------------------------
-                                           Total:         275 KB
-
-The following NEW packages will be INSTALLED:
-
-  unidecode          pkgs/main/noarch::unidecode-1.2.0-pyhd3eb1b0_0 
-
-The following packages will be UPDATED:
-
-  ca-certificates                     2022.10.11-h06a4308_0 --> 2023.01.10-h06a4308_0 
-
-
-Proceed ([y]/n)? ^C
-CondaSystemExit: 
-Operation aborted.  Exiting.
-```
-
-Сделать файл настроек для работы `conda-mirror` с указанием перечня пакетов и их версий:
-
-```yaml
-blacklist:
-    - name: "*"
-whitelist:
-  - name: botocore
-    version: "1.29.55"
-  - name: catboost
-    version: "1.1.1"
-  - name: lightgbm
-    version: "3.2.1"
-  - name: nltk
-    version: "3.7"
-  - name: prophet
-    version: "1.1.2"
-  - name: psycopg2
-    version: "2.9.3"
-  - name: seaborn
-    version: "0.12.2"
-  - name: unidecode
-    version: "1.2.0"
-include_depends: True
-```
-
-Скачать нужные пакеты вместе с зависимостями и сформировать служебные файлы репозитория:
+При обновлении до текущей версии временно требуется обновить файл 
+/usr/lib/zeppelin/interpreter/python/python/zeppelin_python.py
+на версию из Github
+https://github.com/apache/zeppelin/blob/master/python/src/main/resources/python/zeppelin_python.py
 
 ```bash
-mkdir conda1
-conda-mirror --upstream-channel conda-forge --target-directory conda1 --config conda-mirror-conf.yaml --platform linux-64,noarch --num-threads 50 --latest 10
-cp conda1/linux-64/repodata.json conda1/linux-64/current_repodata.json
-cp conda1/linux-64/repodata.json.bz2 conda1/linux-64/current_repodata.json.bz2
-cp conda1/noarch/repodata.json conda1/noarch/current_repodata.json
-cp conda1/noarch/repodata.json.bz2 conda1/noarch/current_repodata.json.bz2
+conda update -c conda-forge --all --yes
+conda install -c conda-forge -n base --yes conda-libmamba-solver
+conda config --set solver libmamba
+conda install -c conda-forge --yes conda-build
+conda install -c conda-forge --yes \
+  'catboost==1.0.6' \
+  'lightgbm==3.2.1' \
+  'nltk==3.7' \
+  'prophet==1.1.2' \
+  'seaborn==0.12.2' \
+  'unidecode==1.2.0' \
+  'psycopg2==2.9.3'
 ```
 
-Скопировать скачанные пакеты в каталог бакета объектного хранилища:
+```bash
+REPO=/Mirror/conda1
+mkdir -pv ${REPO}
+(cd /opt/conda/pkgs && ls *.{conda,bz2}) | while read fname; do
+  url=`grep "$fname" /opt/conda/pkgs/urls.txt`
+  if [ ! -z "$url" ]; then
+    part1=`dirname $url`
+    arch=`basename $part1`
+    mkdir -pv ${REPO}/$arch
+    cp -v /opt/conda/pkgs/$fname ${REPO}/$arch/
+  fi
+done
+conda index ${REPO}
+find ${REPO} -type d -name .cache | sort -u | while read x; do rm -rf $x; done
+```
 
 ```bash
 sudo -u hdfs hdfs dfs -mkdir s3a://dproc-repo/repos/
 sudo -u hdfs hdfs dfs -copyFromLocal -d -t 20 conda1/ s3a://dproc-repo/repos/
 ```
 
-Проверить наличие одного из пакетов в новом репозитории:
-
 ```bash
-conda clean -i -y
-conda search -c https://dproc-repo.website.yandexcloud.net/repos/conda1 --override-channels catboost
+CHANNEL='https://dproc-repo.website.yandexcloud.net/repos/conda1'
+conda update -c ${CHANNEL} --override-channels --all --yes
+conda install -c ${CHANNEL} --override-channels --yes conda-libmamba-solver
+conda config --set solver libmamba
+conda install -c ${CHANNEL} --override-channels --yes \
+  'catboost==1.0.6' \
+  'lightgbm==3.2.1' \
+  'nltk==3.7' \
+  'prophet==1.1.2' \
+  'seaborn==0.12.2' \
+  'unidecode==1.2.0' \
+  'psycopg2==2.9.3'
 ```
 
-
-Установить пакеты:
-
 ```bash
-conda clean -i -y
-conda install -c https://dproc-repo.website.yandexcloud.net/repos/conda1 --override-channels catboost lightgbm nltk prophet psycopg2 seaborn unidecode
+apt install squashfs-tools
+mksquashfs /opt/conda /CondaImage1.squashfs
+sudo -u hdfs hdfs dfs -copyFromLocal -d /CondaImage1.squashfs s3a://dproc-repo/repos/
 ```
 
+```bash
+sudo -u hdfs hdfs dfs -copyToLocal s3a://dproc-repo/repos/CondaImage1.squashfs /tmp/
+mv /tmp/CondaImage1.squashfs /
+chown root:root /CondaImage1.squashfs
+rm -rf /opt/conda/*
+echo '/CondaImage1.squashfs    /opt/conda    squashfs    ro,defaults    0 0' >>/etc/fstab
+mount -a
+```
 
-cp -rlp conda conda.orig
+Ориентировочное время выполнения - 1 минута.
