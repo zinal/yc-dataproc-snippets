@@ -1,16 +1,25 @@
 
 https://pypi.org/project/python-pypi-mirror/
 
-При обновлении до текущей версии временно требуется обновить файл 
-/usr/lib/zeppelin/interpreter/python/python/zeppelin_python.py
-на версию из Github
-https://github.com/apache/zeppelin/blob/master/python/src/main/resources/python/zeppelin_python.py
+В случае обновлении среды Python временно требуется обновить файл `zeppelin_python.py` в следующих точках:
+* каталоге `/usr/lib/zeppelin/interpreter/python/python`
+* архиве `python-interpreter-with-py4j-0.9.0.jar` в каталоге `/usr/lib/zeppelin/interpreter/python`
+* архиве `spark-interpreter-0.9.0.jar` в каталоге `/usr/lib/zeppelin/interpreter/spark`
+
+Актуальный вариант файла `zeppelin_python.py` размещен в [репозитории Zeppelin на Github](https://github.com/apache/zeppelin/blob/master/python/src/main/resources/python/zeppelin_python.py).
 
 ```bash
+conda update -c conda-forge -n base --yes conda
 conda update -c conda-forge --all --yes
 conda install -c conda-forge -n base --yes conda-libmamba-solver
 conda config --set solver libmamba
 conda install -c conda-forge --yes conda-build
+conda update -n base --yes conda
+```
+
+Образ Data Proc версии 2.0:
+
+```bash
 conda install -c conda-forge --yes \
   'catboost==1.0.6' \
   'lightgbm==3.2.1' \
@@ -20,6 +29,20 @@ conda install -c conda-forge --yes \
   'unidecode==1.2.0' \
   'psycopg2==2.9.3'
 ```
+
+Образ Data Proc версии 2.1:
+
+```bash
+conda install -c conda-forge --yes \
+  'catboost>0' \
+  'lightgbm>0' \
+  'nltk>0' \
+  'prophet>0' \
+  'seaborn>0' \
+  'unidecode>0' \
+  'psycopg2>0'
+```
+
 
 ```bash
 REPO=/Mirror/conda1
