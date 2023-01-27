@@ -3,12 +3,12 @@
 
 SOURCE="$1"
 if [ -z "$SOURCE" ]; then
-    echo "NOTE: Source path to zeppelin_python.py not specified, skipping action."
+    echo "NOTE: Source path to zeppelin_python.py not specified, skipping action." >&2
     exit 0
 fi
 
 if [ ! -f /usr/lib/zeppelin/interpreter/spark/python-interpreter-with-py4j-0.9.0.jar ]; then
-    echo "NOTE: Zeppelin 0.9.0 not found, skipping action."
+    echo "NOTE: Zeppelin 0.9.0 not found, skipping action." >&2
     exit 0
 fi
 

@@ -4,7 +4,7 @@
 IMAGE="$1"
 
 if [ -z "$IMAGE" ]; then
-    echo "NOTE: image was not specified, /opt/conda left as is"
+    echo "NOTE: image was not specified, /opt/conda left as is" >&2
     exit 0
 fi
 
@@ -19,12 +19,13 @@ sudo -u hdfs hdfs dfs -copyToLocal "$IMAGE" /tmp/"$fname"
 # Move the base image into the filesystem root, and adjust the file owner.
 mv -v /tmp/"$fname" /"$fname"
 chown root:root /"$fname"
+chmod 444 /"$fname"
 # Wait for the removal task to complete
 wait
 # Setup the mount point
 echo "/$fname    /opt/conda    squashfs    ro,defaults    0 0" >>/etc/fstab
 # Mount the new readonly /opt/conda
-mount -a
+mount /opt/conda
 # Validate the mount
 if [ ! -f /opt/conda/pkgs/urls.txt ]; then
     echo "FATAL: /opt/conda not mounted properly, aborting..."
