@@ -7,26 +7,36 @@ if [ -z "$SOURCE" ]; then
     exit 0
 fi
 
-if [ ! -f /usr/lib/zeppelin/interpreter/spark/python-interpreter-with-py4j-0.9.0.jar ]; then
+if [ ! -f /usr/lib/zeppelin/interpreter/python/python-interpreter-with-py4j-0.9.0.jar ]; then
     echo "NOTE: Zeppelin 0.9.0 not found, skipping action." >&2
     exit 0
 fi
 
-# Download and replace the zeppelin_python.py file.
+set -e
+set -u
+
+# Download the zeppelin_python.py file.
+echo "NOTE: Downloading Zeppelin 0.9.0 update from $SOURCE ..." >&2
 sudo -u hdfs hdfs dfs -copyToLocal "$SOURCE" /tmp/zeppelin_python.py
+
+echo "NOTE: Patching Zeppelin ..." >&2
+
 DEST_PY=/usr/lib/zeppelin/interpreter/python/python/zeppelin_python.py
 mv ${DEST_PY} ${DEST_PY}-orig
 mv /tmp/zeppelin_python.py ${DEST_PY}
 chown root:root ${DEST_PY}
 chmod 644 ${DEST_PY}
 
-# Replace the copy in the jar libraries
+cd /usr/lib/zeppelin/interpreter/python
+jar -uf python-interpreter-with-py4j-0.9.0.jar python/zeppelin_python.py
+
 cd /usr/lib/zeppelin/interpreter/spark
 cp ${DEST_PY} python/
 jar -uf spark-interpreter-0.9.0.jar python/zeppelin_python.py &
-cd /usr/lib/zeppelin/interpreter/python
-jar -uf python-interpreter-with-py4j-0.9.0.jar python/zeppelin_python.py
+
 # Wait for completion
 wait
+
+echo "NOTE: Zeppelin patched!" >&2
 
 # End Of File
