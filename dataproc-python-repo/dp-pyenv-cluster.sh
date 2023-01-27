@@ -6,7 +6,8 @@
 . ./dp-pyenv-options.sh
 
 YC_CLUSTER=pyenv-demo2
-YC_CONDA=s3a://dproc-repo/repos/CondaImage1.squashfs
+YC_CONDA=s3a://dproc-code/images/CondaImage1.squashfs
+YC_PATCH=s3a://dproc-code/images/zeppelin_python.py
 
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \

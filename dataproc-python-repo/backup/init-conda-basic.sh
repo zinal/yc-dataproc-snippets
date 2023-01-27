@@ -1,6 +1,7 @@
 #! /bin/sh
 # Update /opt/conda image using the local repository.
 
+# 
 CHANNEL="$1"
 
 if [ -z "$CHANNEL" ]; then
