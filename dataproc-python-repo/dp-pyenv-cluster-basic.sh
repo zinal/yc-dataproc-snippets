@@ -5,7 +5,7 @@
 
 . ./dp-pyenv-options.sh
 
-YC_CLUSTER=pyenv-demo2
+YC_CLUSTER=pyenv-demo1
 YC_REPO=https://dproc-repo.website.yandexcloud.net/repos/conda1
 
 yc dataproc cluster create ${YC_CLUSTER} \
@@ -34,6 +34,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init-conda-basic.sh,args='${YC_REPO}
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init-conda-basic.sh,args='${YC_REPO} \
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init-patch-zeppelin090.sh,args='${YC_PATCH}
 
 # End Of File
