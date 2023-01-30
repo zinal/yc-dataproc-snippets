@@ -7,6 +7,7 @@
 * [Инструкция по настройке внешней базы данных Apache Hive Metastore](dataproc-hive/hive-metastore.md)
 * [Настройка S3A Committers для оптимизации записи в Yandex Object Storage](dataproc-s3a-committers/README.md)
 * [Копирование дополнительных файлов на узлы Data Proc](dataproc-copy-files/README.md)
+* [Управление дополнительными компонентами Python](dataproc-python-repo/README.md)
 
 Примеры вспомогательных скриптов и программ:
 * [Раскраска вычислительных ресурсов Data Proc](dp-compute-colorizer/)
