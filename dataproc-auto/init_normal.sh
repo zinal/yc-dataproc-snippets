@@ -2,6 +2,9 @@
 
 set -e
 
+# Увеличиваем MTU
+ip link set eth0 mtu 8910
+
 apt-get install -y mc zip unzip screen
 
 BUCKET=$1
