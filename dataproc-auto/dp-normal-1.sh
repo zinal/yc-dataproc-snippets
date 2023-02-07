@@ -13,7 +13,8 @@ YC_ZONE=ru-central1-c
 YC_SUBNET=default-ru-central1-c
 YC_BUCKET=dproc-wh
 YC_SA=dp1
-YC_MS_URL='jdbc:postgresql://rc1b-pntr3g0uume3q4ob.mdb.yandexcloud.net:6432/hive?targetServerType=master&ssl=true&sslmode=require'
+YC_MS_URL='jdbc:postgresql://gw1:5432/hivems?ssl=true&sslmode=require'
+YC_MS_USER='hivems'
 YC_MS_PASS='chahle1Eiqu5BukieZoh'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
@@ -36,7 +37,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
   --property hive:javax.jdo.option.ConnectionURL=${YC_MS_URL} \
   --property hive:javax.jdo.option.ConnectionDriverName=org.postgresql.Driver \
-  --property hive:javax.jdo.option.ConnectionUserName=hive \
+  --property hive:javax.jdo.option.ConnectionUserName=${YC_MS_USER} \
   --property hive:javax.jdo.option.ConnectionPassword=${YC_MS_PASS} \
   --property hive:hive.metastore.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property hive:hive.exec.compress.output=true \
