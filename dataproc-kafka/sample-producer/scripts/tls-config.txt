@@ -1,0 +1,5 @@
+
+mkdir -pv certz
+curl "https://storage.yandexcloud.net/cloud-certs/CA.pem" -o certz/YandexInternalRootCA.crt
+
+keytool -import -trustcacerts -keystore certz/truststore.kt -storepass changeit -noprompt -file certz/YandexInternalRootCA.crt -alias y1

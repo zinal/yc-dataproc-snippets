@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>Sample Kafka producer job properties file</comment>
+<!-- Kafka connection properties -->
+<entry key="bootstrap.servers">rc1a-0n96ifqmlou7f9gi.mdb.yandexcloud.net:9091,rc1b-856cmu9b98qojh0i.mdb.yandexcloud.net:9091,rc1c-aglv7qressjalsau.mdb.yandexcloud.net:9091</entry>
+<entry key="acks">all</entry>
+<entry key="key.serializer">org.apache.kafka.common.serialization.StringSerializer</entry>
+<entry key="value.serializer">org.apache.kafka.common.serialization.StringSerializer</entry>
+<entry key="security.protocol">SASL_SSL</entry>
+<entry key="sasl.mechanism">SCRAM-SHA-512</entry>
+<entry key="sasl.jaas.config">org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="jah5oeRu1B";</entry>
+<entry key="ssl.truststore.location">certz/truststore.kt</entry>
+<entry key="ssl.truststore.password">changeit</entry>
+<!-- Sample producer properties -->
+<entry key="demo.topic">topic1</entry>
+<entry key="demo.msg.rate">10.0</entry>
+</properties>
