@@ -12,9 +12,10 @@ import org.apache.spark.sql.types.StructType;
 
 /*
 
+CLUSTER=normal-1
 KAFKA=rc1a-0n96ifqmlou7f9gi.mdb.yandexcloud.net:9091,rc1b-856cmu9b98qojh0i.mdb.yandexcloud.net:9091,rc1c-aglv7qressjalsau.mdb.yandexcloud.net:9091
 
-yc dataproc job create-spark --cluster-name normal-3 \
+yc dataproc job create-spark --cluster-name ${CLUSTER} \
   --main-class ru.yandex.cloud.dataproc.sample.consumer.SampleConsumer \
   --main-jar-file-uri s3a://dproc-code/shared-libs/sample-consumer-1.0-SNAPSHOT.jar \
   --properties spark.dataproc.demo.kafka.file-prefix=s3a://dproc-wh/kafka1/sample- \
@@ -23,9 +24,9 @@ yc dataproc job create-spark --cluster-name normal-3 \
   --properties spark.dataproc.demo.kafka.password=jah5oeRu1B \
   --properties spark.dataproc.demo.kafka.topic=topic1
 
-yc dataproc job list --cluster-name normal-3
+yc dataproc job list --cluster-name ${CLUSTER}
 
-yc dataproc job cancel --cluster-name normal-3 --id c9qo979jijmmba6nr5v8
+yc dataproc job cancel --cluster-name ${CLUSTER} --id c9qo979jijmmba6nr5v8
 
 */
 
@@ -66,7 +67,12 @@ public class SampleConsumer implements Runnable {
                 functions.from_json(functions.col("value").cast(DataTypes.StringType), jsonType)
                         .alias("value")
         );
-        ds2.write().format("parquet").save(makeOutputFileName());
+        final Dataset<Row> ds3 = ds2.select(
+                functions.col("key"),
+                functions.col("value.*")
+        );
+        ds3.printSchema();
+        ds3.write().format("parquet").save(makeOutputDirName());
     }
 
     private java.util.Map<String, String> makeKafkaOptions() {
@@ -85,11 +91,11 @@ public class SampleConsumer implements Runnable {
                 spark.conf().get(PROP_KAFKA_USER), spark.conf().get(PROP_KAFKA_PASSWORD));
     }
 
-    private String makeOutputFileName() {
+    private String makeOutputDirName() {
         String prefix = spark.conf().get(PROP_FILE_PREFIX);
         if (prefix==null || prefix.length()==0)
             prefix = "/tmp/dataproc-kafka-";
-        return prefix + UUID.randomUUID().toString() + ".parquet";
+        return prefix + UUID.randomUUID().toString();
     }
 
 }

@@ -7,9 +7,6 @@ ip link set eth0 mtu 8910
 
 apt-get install -y mc zip unzip screen
 
-BUCKET=$1
-MOUNT_POINT=/s3data
-
 # Настройка логгинга для Spark
 if [ ! -f /etc/spark/conf/log4j.properties ]; then
 cat >/etc/spark/conf/log4j.properties <<EOF
@@ -40,6 +37,12 @@ log4j.logger.org.apache.spark.sql.execution.datasources.parquet.ParquetWriteSupp
 EOF
 fi
 
+# **** Begin DISABLED GeeseFS
+if false; then
+
+BUCKET=$1
+MOUNT_POINT=/s3data
+
 # Загрузка GeeseFS
 wget -nv https://github.com/yandex-cloud/geesefs/releases/latest/download/geesefs-linux-amd64 -O /opt/geesefs
 chmod a+rwx /opt/geesefs
@@ -53,3 +56,16 @@ chmod 755 ${BOOT_SCRIPT}
 
 # Запуск скрипта
 ${BOOT_SCRIPT}
+
+fi
+# **** End GeeseFS
+
+# Download and install the missing jar files
+mkdir -p -v /tmp/depjars
+chown -R hdfs:hdfs /tmp/depjars
+sudo -u hdfs hdfs dfs -copyToLocal 's3a://dproc-code/depjars/' /tmp/
+(cd /usr/lib/spark/external/lib/ && \
+  mv /tmp/depjars/commons-pool2-2.6.2.jar . && \
+  mv /tmp/depjars/kafka-clients-2.4.1.jar . && \
+  chown root:root kafka-clients-2.4.1.jar commons-pool2-2.6.2.jar && \
+  chmod 644 kafka-clients-2.4.1.jar commons-pool2-2.6.2.jar)
