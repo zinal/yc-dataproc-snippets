@@ -22,7 +22,8 @@ yc dataproc job create-spark --cluster-name ${CLUSTER} \
   --properties spark.dataproc.demo.kafka.bootstrap=${KAFKA} \
   --properties spark.dataproc.demo.kafka.user=user1 \
   --properties spark.dataproc.demo.kafka.password=jah5oeRu1B \
-  --properties spark.dataproc.demo.kafka.topic=topic1
+  --properties spark.dataproc.demo.kafka.topic=topic1 \
+  --properties spark.dataproc.demo.kafka.mode=BATCH
 
 yc dataproc job list --cluster-name ${CLUSTER}
 
@@ -41,11 +42,26 @@ public class SampleConsumer implements Runnable {
     public final static String PROP_KAFKA_USER = "spark.dataproc.demo.kafka.user";
     public final static String PROP_KAFKA_PASSWORD = "spark.dataproc.demo.kafka.password";
     public final static String PROP_KAFKA_TOPIC = "spark.dataproc.demo.kafka.topic";
+    public final static String PROP_MODE = "spark.dataproc.demo.kafka.mode";
+
+    public static enum ExecMode {
+        BATCH,
+        STREAM
+    }
 
     private final SparkSession spark;
+    private final ExecMode mode;
+    private final StructType jsonType;
 
     public SampleConsumer(SparkSession spark) {
         this.spark = spark;
+        this.mode = ExecMode.valueOf(spark.conf().get(PROP_MODE, ExecMode.BATCH.name()));
+        this.jsonType = new StructType(new StructField[]{
+            new StructField("a", DataTypes.StringType, false, Metadata.empty()),
+            new StructField("b", DataTypes.LongType, false, Metadata.empty()),
+            new StructField("c", DataTypes.IntegerType, false, Metadata.empty()),
+            new StructField("d", DataTypes.StringType, false, Metadata.empty()),
+        });
     }
 
     public static void main(String[] args) {
@@ -55,12 +71,17 @@ public class SampleConsumer implements Runnable {
 
     @Override
     public void run() {
-        final StructType jsonType = new StructType(new StructField[]{
-            new StructField("a", DataTypes.StringType, false, Metadata.empty()),
-            new StructField("b", DataTypes.LongType, false, Metadata.empty()),
-            new StructField("c", DataTypes.IntegerType, false, Metadata.empty()),
-            new StructField("d", DataTypes.StringType, false, Metadata.empty()),
-        });
+        switch (mode) {
+            case BATCH:
+                runBatch();
+                break;
+            case STREAM:
+                runStream();
+                break;
+        }
+    }
+
+    public void runBatch() {
         final Dataset<Row> ds1 = spark.read().format("kafka").options(makeKafkaOptions()).load();
         final Dataset<Row> ds2 = ds1.select(
                 functions.col("key").cast(DataTypes.StringType),
@@ -71,8 +92,12 @@ public class SampleConsumer implements Runnable {
                 functions.col("key"),
                 functions.col("value.*")
         );
-        ds3.printSchema();
+        // ds3.printSchema();
         ds3.write().format("parquet").save(makeOutputDirName());
+    }
+
+    public void runStream() {
+        
     }
 
     private java.util.Map<String, String> makeKafkaOptions() {

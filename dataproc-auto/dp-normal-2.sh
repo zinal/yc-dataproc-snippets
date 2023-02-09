@@ -5,7 +5,7 @@
 # Предполагается, что уже созданы
 #  * бакет Object Storage,
 #  * сервисный аккаунт с доступом к бакету,
-#  * база данных PostgreSQL
+#  * кластер Data Proc с сервисом Hive Metastore
 
 YC_CLUSTER=normal-2
 YC_VERSION=2.0
