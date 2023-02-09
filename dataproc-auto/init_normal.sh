@@ -42,7 +42,7 @@ fi
 
 # Загрузка и установка недостающих файлов JAR
 DESTDIR=/usr/lib/spark/external/lib
-JARLIB=`ls ${DESTDIR}/ | grep commons-pool2`
+JARLIB=`ls ${DESTDIR}/ | grep commons-pool2 | cat`
 if [ -z "$JARLIB" ]; then
   # Не хватает библиотек для работы с Kafka
   mkdir -p -v /tmp/depjars
