@@ -3,7 +3,7 @@
 <properties>
 <comment>Sample Kafka producer job properties file</comment>
 <!-- Kafka connection properties -->
-<entry key="bootstrap.servers">rc1a-0n96ifqmlou7f9gi.mdb.yandexcloud.net:9091,rc1b-856cmu9b98qojh0i.mdb.yandexcloud.net:9091,rc1c-aglv7qressjalsau.mdb.yandexcloud.net:9091</entry>
+<entry key="bootstrap.servers">rc1c-amg5f4q074e2hshf.mdb.yandexcloud.net:9091</entry>
 <entry key="acks">all</entry>
 <entry key="key.serializer">org.apache.kafka.common.serialization.StringSerializer</entry>
 <entry key="value.serializer">org.apache.kafka.common.serialization.StringSerializer</entry>

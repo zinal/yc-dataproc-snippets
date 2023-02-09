@@ -34,6 +34,7 @@ public class SampleProducer implements Runnable {
      * Generate a single Kafka message with the JSON payload.
      * @return The generated Kafka message
      */
+    @SuppressWarnings("unchecked")
     public ProducerRecord<String, String> makeRecord() {
         JSONObject data = new JSONObject();
         String key = UUID.randomUUID().toString();
