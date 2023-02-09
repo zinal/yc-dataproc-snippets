@@ -54,4 +54,4 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh,args='${YC_BUCKET}
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh'

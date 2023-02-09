@@ -222,6 +222,8 @@ hive>
 
 Apache Hive и Apache Spark поддерживают возможность обращения к [внешнему сервису Hive Metastore](https://cwiki.apache.org/confluence/display/Hive/AdminManual+Metastore+Administration#AdminManualMetastoreAdministration-RemoteMetastoreServer), что позволяет избежать необходимости поддержания большого количества открытых подключений к базе данных Metastore со стороны сразу нескольких кластеров Data Proc.
 
+### 4.1 Запуск сервиса Hive Metastore
+
 Для настройки такой конфигурации необходимо развернуть отдельный кластер Data Proc для запуска Hive Metastore. В таком кластере требуется наличие только мастер-узла. При развёртывании кластера необходимо использовать образы Data Proc версии 2.0, поскольку в версии 2.1 на сегодня не поддерживается сервис Hive. Настройки Hive Metastore, включая параметры подключения к базе данных Metastore, необходимо определить через свойства кластера, как показано ниже:
 
 ```bash
@@ -261,6 +263,8 @@ $ yc dataproc cluster list-hosts --name metastore-1 --format yaml
 
 Имя хоста выводится в атрибуте `name`, при этом сервис Metastore запускается на порту `9083`. Использование внешнего сервиса Metastore включается через свойство `hive.metastore.uris`, пример значения свойства: `thrift://rc1c-dataproc-m-jvvt69wu2eiy8vra.mdb.yandexcloud.net:9083`
 
+### 4.2 Использование внешнего Hive Metastore в Data Proc 2.0
+
 При использовании образа Data Proc версии 2.0 кластер может быть создан с поддержкой сервиса Hive, и использовать внешний сервис Hive Metastore, развёрнутый в составе отдельного кластера как показано выше. Свойство `hive.metastore.uris` в такой конфигурации достаточно установить в контексте сервиса Hive, и оно будет использоваться как Hive, так и Spark заданиями.
 
 Ниже показан пример скрипта создания кластера Data Proc версии 2.0, использующего внешний ранее развёрнутый сервис Hive Metastore.
@@ -294,6 +298,44 @@ yc dataproc cluster create v20cluster \
   --property spark:spark.driver.extraJavaOptions='-XX:+UseG1GC' \
   --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
   --property spark:spark.sql.warehouse.dir=s3a://dproc1/wh \
+  --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
+  --property spark:spark.sql.addPartitionInBatch.size=1000
+```
+
+
+### 4.3 Использование внешнего Hive Metastore в Data Proc 2.1
+
+При использовании образа Data Proc версии 2.1 сервис Hive на сегодня не поддерживается. Для работы с внешним Hive Metastore в заданиях Spark требуется использовать свойство `spark.hadoop.hive.metastore.uris`, задаваемое на уровне конфигурации Spark.
+
+Ниже показан пример скрипта для создания кластера Data Proc версии 2.1, использующего внешний ранее развёрнутый сервис Hive Metastore.
+
+```bash
+YC_SUBNET=default-ru-central1-b
+YC_MS_URI='thrift://rc1c-dataproc-m-jvvt69wu2eiy8vra.mdb.yandexcloud.net:9083'
+yc dataproc cluster create v21cluster \
+  --zone ru-central1-b \
+  --service-account-name dp1 \
+  --version 2.1 --ui-proxy \
+  --services yarn,spark,livy,zeppelin \
+  --bucket dproc1 \
+  --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="compute",role='computenode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=4,max-hosts-count=4,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
+  --ssh-public-keys-file ssh-keys.tmp \
+  --property core:fs.s3a.committer.name=directory \
+  --property core:fs.s3a.committer.staging.conflict-mode=append \
+  --property core:fs.s3a.committer.threads=100 \
+  --property core:fs.s3a.connection.maximum=1000 \
+  --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
+  --property spark:spark.hadoop.hive.metastore.uris=${YC_MS_URI} \
+  --property spark:spark.sql.warehouse.dir=s3a://dproc1/wh \
+  --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
+  --property spark:spark.kryoserializer.buffer=32m \
+  --property spark:spark.kryoserializer.buffer.max=256m \
+  --property spark:spark.hadoop.fs.s3a.committer.name=directory \
+  --property spark:spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol \
+  --property spark:spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter \
+  --property spark:spark.driver.extraJavaOptions='-XX:+UseG1GC' \
+  --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000
 ```
