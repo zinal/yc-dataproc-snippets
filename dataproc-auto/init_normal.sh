@@ -34,6 +34,7 @@ log4j.logger.org.apache.hadoop.hive.ql.exec.FunctionRegistry=ERROR
 
 # Extra loggers to avoid
 log4j.logger.org.apache.spark.sql.execution.datasources.parquet.ParquetWriteSupport=WARN
+log4j.logger.org.apache.hadoop.metrics2.impl.MetricsSystemImpl=WARN
 EOF
 fi
 
@@ -60,12 +61,25 @@ ${BOOT_SCRIPT}
 fi
 # **** End GeeseFS
 
-# Download and install the missing jar files
+# Загрузка и установка недостающих файлов JAR
 mkdir -p -v /tmp/depjars
 chown -R hdfs:hdfs /tmp/depjars
-sudo -u hdfs hdfs dfs -copyToLocal 's3a://dproc-code/depjars/' /tmp/
-(cd /usr/lib/spark/external/lib/ && \
-  mv /tmp/depjars/commons-pool2-2.6.2.jar . && \
-  mv /tmp/depjars/kafka-clients-2.4.1.jar . && \
-  chown root:root kafka-clients-2.4.1.jar commons-pool2-2.6.2.jar && \
-  chmod 644 kafka-clients-2.4.1.jar commons-pool2-2.6.2.jar)
+DESTDIR=/usr/lib/spark/external/lib
+if [ -f ${DESTDIR}/spark-sql-kafka-0-10_2.12-3.0.3.jar ]; then
+  # Data Proc 2.0
+  JARLIB=`ls ${DESTDIR}/commons-pool2-*.jar`
+  if [ -z "$JARLIB" ]; then
+    # Не хватает библиотек для работы с Kafka
+    sudo -u hdfs hdfs dfs -copyToLocal 's3a://dproc-code/dp20/depjars/' /tmp/
+    (cd ${DESTDIR} && \
+      mv /tmp/depjars/commons-pool2-2.6.2.jar . && \
+      mv /tmp/depjars/kafka-clients-2.4.1.jar . && \
+      chown root:root kafka-clients-2.4.1.jar commons-pool2-2.6.2.jar && \
+      chmod 644 kafka-clients-2.4.1.jar commons-pool2-2.6.2.jar)
+  fi
+fi
+if [ -f ${DESTDIR}/spark-sql-kafka-0-10_2.12-3.2.1.jar ]; then
+  # Data Proc 2.1
+fi
+
+# End Of File
