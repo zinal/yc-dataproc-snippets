@@ -1,5 +1,6 @@
 package ru.yandex.cloud.dataproc.sample.consumer;
 
+import java.text.SimpleDateFormat;
 import java.util.UUID;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -35,7 +36,7 @@ yc dataproc job cancel --cluster-name ${CLUSTER} --id c9qo979jijmmba6nr5v8
  * Sample Kafka consumer writing the current set of records from topic to the Parquet file.
  * @author zinal
  */
-public class SampleConsumer implements Runnable {
+public class SampleConsumer {
 
     public final static String PROP_FILE_PREFIX = "spark.dataproc.demo.kafka.file-prefix";
     public final static String PROP_KAFKA_BOOTSTRAP = "spark.dataproc.demo.kafka.bootstrap";
@@ -64,13 +65,12 @@ public class SampleConsumer implements Runnable {
         });
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         new SampleConsumer(SparkSession.builder()
                 .appName("dataproc-sample-kafka-consumer").getOrCreate()).run();
     }
 
-    @Override
-    public void run() {
+    public void run() throws Exception {
         switch (mode) {
             case BATCH:
                 runBatch();
@@ -81,8 +81,9 @@ public class SampleConsumer implements Runnable {
         }
     }
 
-    public void runBatch() {
-        final Dataset<Row> ds1 = spark.read().format("kafka").options(makeKafkaOptions()).load();
+    public void runBatch() throws Exception {
+        final Dataset<Row> ds1 = spark.read().format("kafka")
+                .options(makeKafkaOptions()).load();
         final Dataset<Row> ds2 = ds1.select(
                 functions.col("key").cast(DataTypes.StringType),
                 functions.from_json(functions.col("value").cast(DataTypes.StringType), jsonType)
@@ -96,8 +97,21 @@ public class SampleConsumer implements Runnable {
         ds3.write().format("parquet").save(makeOutputDirName());
     }
 
-    public void runStream() {
-        
+    public void runStream() throws Exception {
+        final Dataset<Row> ds1 = spark.readStream().format("kafka")
+                .options(makeKafkaOptions()).load();
+        final Dataset<Row> ds2 = ds1.select(
+                functions.col("key").cast(DataTypes.StringType),
+                functions.from_json(functions.col("value").cast(DataTypes.StringType), jsonType)
+                        .alias("value")
+        );
+        final Dataset<Row> ds3 = ds2.select(
+                functions.col("key"),
+                functions.col("value.*")
+        );
+        ds3.writeStream().format("parquet")
+                .option("checkpointLocation", makeCheckpointLocation())
+                .start(makeOutputDirName()).awaitTermination();
     }
 
     private java.util.Map<String, String> makeKafkaOptions() {
@@ -119,8 +133,16 @@ public class SampleConsumer implements Runnable {
     private String makeOutputDirName() {
         String prefix = spark.conf().get(PROP_FILE_PREFIX);
         if (prefix==null || prefix.length()==0)
-            prefix = "/tmp/dataproc-kafka-";
-        return prefix + UUID.randomUUID().toString();
+            prefix = "/tmp/dataproc-kafka-data_";
+        String date = new SimpleDateFormat("yyyy-MM-dd/HH-mm-ss").format(new java.util.Date());
+        return prefix + date + "_" + UUID.randomUUID().toString();
+    }
+
+    private String makeCheckpointLocation() {
+        String prefix = spark.conf().get(PROP_FILE_PREFIX);
+        if (prefix==null || prefix.length()==0)
+            prefix = "/tmp/dataproc-kafka-ckp_";
+        return prefix + "_ckp";
     }
 
 }
