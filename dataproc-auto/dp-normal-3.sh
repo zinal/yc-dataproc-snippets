@@ -31,7 +31,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:fs.s3a.committer.threads=100 \
   --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
-  --property spark:hive.metastore.uris=${YC_MS_URI} \
+  --property spark:spark.hadoop.hive.metastore.uris=${YC_MS_URI} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \

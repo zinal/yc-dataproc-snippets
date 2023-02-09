@@ -12,8 +12,8 @@ import org.apache.spark.sql.types.StructType;
 
 /*
 
-CLUSTER=normal-1
-KAFKA=rc1a-0n96ifqmlou7f9gi.mdb.yandexcloud.net:9091,rc1b-856cmu9b98qojh0i.mdb.yandexcloud.net:9091,rc1c-aglv7qressjalsau.mdb.yandexcloud.net:9091
+CLUSTER=normal-3
+KAFKA=rc1c-amg5f4q074e2hshf.mdb.yandexcloud.net:9091
 
 yc dataproc job create-spark --cluster-name ${CLUSTER} \
   --main-class ru.yandex.cloud.dataproc.sample.consumer.SampleConsumer \
