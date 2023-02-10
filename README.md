@@ -7,6 +7,7 @@
 * [Инструкция по настройке внешней базы данных Apache Hive Metastore](dataproc-hive/)
 * [Настройка S3A Committers для оптимизации записи в Yandex Object Storage](dataproc-s3a-committers/)
 * [Копирование дополнительных файлов на узлы Data Proc](dataproc-copy-files/)
+* [Настройка кластера Data Proc для работы с Apache Kafka](dataproc-kafka/)
 * [Управление дополнительными компонентами Python](dataproc-python-repo/)
 
 Примеры вспомогательных скриптов и программ:
