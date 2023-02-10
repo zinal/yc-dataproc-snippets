@@ -1,0 +1,17 @@
+CLUSTER=normal-2
+KAFKA=rc1c-amg5f4q074e2hshf.mdb.yandexcloud.net:9091
+
+yc dataproc job create-spark --cluster-name ${CLUSTER} \
+  --main-class ru.yandex.cloud.dataproc.sample.consumer.SampleConsumer \
+  --main-jar-file-uri s3a://dproc-code/shared-libs/sample-consumer-1.0-SNAPSHOT.jar \
+  --properties spark.dataproc.demo.kafka.file-prefix=s3a://dproc-wh/kafka1/sample- \
+  --properties spark.dataproc.demo.kafka.bootstrap=${KAFKA} \
+  --properties spark.dataproc.demo.kafka.user=user1 \
+  --properties spark.dataproc.demo.kafka.password=jah5oeRu1B \
+  --properties spark.dataproc.demo.kafka.topic=topic1 \
+  --properties spark.dataproc.demo.kafka.mode=BATCH
+
+yc dataproc job list --cluster-name ${CLUSTER}
+
+yc dataproc job cancel --cluster-name ${CLUSTER} --id c9qo979jijmmba6nr5v8
+

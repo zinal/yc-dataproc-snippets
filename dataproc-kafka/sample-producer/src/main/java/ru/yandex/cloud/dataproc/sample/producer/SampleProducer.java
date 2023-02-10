@@ -50,27 +50,29 @@ public class SampleProducer implements Runnable {
     public void run() {
         LOG.info("Now sending with rate {}", messageRate);
 
-        int packMessages = 0;
+        final int maxPack;
+        if (messageRate < 100.0)
+            maxPack = 10;
+        else
+            maxPack = 100;
+
         int slotMessages = 0;
         long totalMessages = 0L;
         long tvStep = System.currentTimeMillis();
         while (true) {
-            producer.send(makeRecord());
-            packMessages += 1;
-            slotMessages += 1;
-            totalMessages += 1;
-            if (packMessages >= 10) {
-                producer.flush();
-                packMessages = 0;
+            for (int packMessages=0; packMessages<maxPack; ++packMessages) {
+                producer.send(makeRecord());
             }
+            producer.flush();
+            slotMessages += maxPack;
+            totalMessages += maxPack;
             long tvCur;
             while (true) {
                 tvCur = System.currentTimeMillis();
-                final double curRate = ((double)slotMessages) /
-                        (((double)(tvCur - tvStep)) / 1000.0);
-                if (curRate < messageRate)
+                final double curRate = (((double)slotMessages) * 1000.0) / ((double)(tvCur - tvStep));
+                if (curRate <= messageRate*1.1)
                     break;
-                try { Thread.sleep(70L); } catch(InterruptedException ix) {}
+                try { Thread.sleep(10L); } catch(InterruptedException ix) {}
             }
             if ((tvCur - tvStep) >= 30000L) {
                 LOG.info("...sent messages: {}, total: {}", slotMessages, totalMessages);

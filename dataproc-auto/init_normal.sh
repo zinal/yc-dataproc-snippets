@@ -4,7 +4,9 @@ export TERM=dumb
 set -e
 
 # Увеличиваем MTU
-ip link set eth0 mtu 8910
+# Внимание! Увеличение MTU может снизить производительность при взаимодействии
+# с сервисами, использующими малые значения MTU, включая Yandex Cloud MDB.
+#ip link set eth0 mtu 8910
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y mc zip unzip screen
