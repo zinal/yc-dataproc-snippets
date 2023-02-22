@@ -1,4 +1,4 @@
-package ru.yandex.cloud.ddb;
+package yandex.cloud.custom.ddb;
 
 import java.time.Duration;
 import com.amazonaws.auth.AWSCredentials;

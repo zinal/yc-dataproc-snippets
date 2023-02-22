@@ -1,4 +1,4 @@
-package ru.yandex.cloud.delta;
+package yandex.cloud.custom.delta;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -23,7 +23,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.model.*;
 
-import ru.yandex.cloud.ddb.YcLockboxAwsCredentials;
+import yandex.cloud.custom.ddb.YcLockboxAwsCredentials;
 
 /**
  * A customized implementation of {@link S3DynamoDBLogStore} that works with
