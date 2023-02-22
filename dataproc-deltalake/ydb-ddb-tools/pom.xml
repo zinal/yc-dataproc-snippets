@@ -19,9 +19,9 @@
   <groupId>ru.yandex.cloud</groupId>
   <artifactId>ydb-ddb-tools</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>YDB Document API support tools</name>
+  <name>Yandex Data Proc support tools</name>
   <description>
-    This module contains code to support Yandex Cloud specific authentication for YDB Document API.
+    This module contains code to support Yandex Cloud specific helpers for Data Proc.
   </description>
   <packaging>jar</packaging>
 
@@ -42,7 +42,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-aws</artifactId>
-      <version>3.2.2</version>
+      <version>3.3.2</version>
       <exclusions>
           <exclusion>
               <groupId>com.google.protobuf</groupId>
@@ -53,7 +53,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-      <version>3.2.2</version>
+      <version>3.3.2</version>
       <exclusions>
           <exclusion>
               <groupId>com.google.protobuf</groupId>
@@ -62,9 +62,14 @@
       </exclusions>
     </dependency>
     <dependency>
+        <groupId>io.delta</groupId>
+        <artifactId>delta-storage-s3-dynamodb</artifactId>
+        <version>2.0.2</version>
+    </dependency>
+    <dependency>
         <groupId>com.yandex.cloud</groupId>
         <artifactId>java-sdk-services</artifactId>
-        <version>2.5.2</version>
+        <version>2.5.3</version>
     </dependency>
   </dependencies>
 </project>
