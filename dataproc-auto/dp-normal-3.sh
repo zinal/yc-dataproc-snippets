@@ -13,7 +13,7 @@ YC_ZONE=ru-central1-c
 YC_SUBNET=default-ru-central1-c
 YC_BUCKET=dproc-wh
 YC_SA=dp1
-YC_MS_URI='thrift://rc1c-dataproc-m-jvvt69wu2eiy8vra.mdb.yandexcloud.net:9083'
+YC_MS_URI='thrift://rc1c-dataproc-m-k4gpw2jv9xjkevlj.mdb.yandexcloud.net:9083'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
