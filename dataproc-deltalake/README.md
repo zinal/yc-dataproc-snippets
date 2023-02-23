@@ -26,16 +26,6 @@ cur_lb_id=`cat info-delta1-lb1.json | jq -r .id`
 ls -l /s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar
 ```
 
-```bash
-spark-sql --jars /s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar \
-  --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
-  --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  --conf spark.delta.logStore.s3a.impl=yandex.cloud.custom.delta.YcS3YdbLogStore \
-  --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etngt3b6eh9qfc80vt54/ \
-  --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=e6qr20sbgn3ckpalh54p
-```
-
-
 ```
 spark-sql \
   --conf spark.driver.extraClassPath=/s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar \
