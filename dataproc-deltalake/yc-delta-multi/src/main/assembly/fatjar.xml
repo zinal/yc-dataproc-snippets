@@ -14,13 +14,12 @@
           <useProjectArtifact>true</useProjectArtifact>
           <unpack>true</unpack>
           <scope>runtime</scope>
-          <!--
           <excludes>
               <exclude>org.slf4j:slf4j-api</exclude>
               <exclude>org.apache.hadoop:hadoop-common</exclude>
               <exclude>org.apache.hadoop:hadoop-aws</exclude>
+              <exclude>com.fasterxml.jackson.core:jackson-databind</exclude>
           </excludes>
-          -->
       </dependencySet>
   </dependencySets>
 </assembly>
