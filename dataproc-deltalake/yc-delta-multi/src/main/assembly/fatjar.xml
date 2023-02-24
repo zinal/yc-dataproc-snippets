@@ -16,6 +16,7 @@
           <scope>runtime</scope>
           <includes>
               <include>com.yandex.cloud:yc-delta-multi</include>
+<!-- Replaced with direct HTTPS call
               <include>com.yandex.cloud:java-sdk-services</include>
               <include>com.yandex.cloud:java-genproto</include>
               <include>com.yandex.cloud:java-sdk-auth</include>
@@ -30,6 +31,7 @@
               <include>com.google.guava:guava</include>
               <include>com.google.protobuf:protobuf-java</include>
               <include>io.perfmark:perfmark-api</include>
+-->
               <include>io.delta:delta-core_2.12</include>
               <include>io.delta:delta-storage</include>
               <include>io.delta:delta-storage-s3-dynamodb</include>

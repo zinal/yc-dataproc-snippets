@@ -33,7 +33,7 @@ spark-sql --executor-memory 20g --executor-cores 4 \
   --conf spark.executor.extraClassPath=/s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar \
   --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  --conf spark.databricks.delta.optimize.maxThreads=120 \
+  --conf spark.databricks.delta.optimize.maxThreads=20 \
   --conf spark.delta.logStore.s3a.impl=yandex.cloud.custom.delta.YcS3YdbLogStore \
   --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etngt3b6eh9qfc80vt54/ \
   --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=e6qr20sbgn3ckpalh54p

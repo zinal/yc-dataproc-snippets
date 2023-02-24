@@ -1,16 +1,22 @@
 package yandex.cloud.custom.ddb;
 
-import java.time.Duration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import io.grpc.ManagedChannel;
-import yandex.cloud.api.lockbox.v1.PayloadServiceGrpc;
-import yandex.cloud.api.lockbox.v1.PayloadServiceGrpc.PayloadServiceBlockingStub;
-import yandex.cloud.api.lockbox.v1.PayloadServiceOuterClass.GetPayloadRequest;
-import yandex.cloud.api.lockbox.v1.PayloadOuterClass.Payload;
-import yandex.cloud.sdk.ServiceFactory;
-import yandex.cloud.sdk.auth.Auth;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * This class reads the AWS key id and secret from Yandex Cloud Lockbox entry.
@@ -18,55 +24,60 @@ import yandex.cloud.sdk.auth.Auth;
  */
 public class YcLockboxAwsCredentials implements AWSCredentialsProvider {
 
-    private static final org.slf4j.Logger LOG
-            = org.slf4j.LoggerFactory.getLogger(YcLockboxAwsCredentials.class);
-
     public static final String ENTRY_ID = "key-id";
     public static final String ENTRY_SECRET = "key-secret";
 
     private final AWSCredentials credentials;
 
-    public YcLockboxAwsCredentials(String lockboxEntryName) {
-        ServiceFactory factory = ServiceFactory.builder()
-                .credentialProvider(Auth.computeEngineBuilder())
-                .requestTimeout(Duration.ofMinutes(1))
-                .build();
-        PayloadServiceBlockingStub service = factory.create(
-                PayloadServiceBlockingStub.class,
-                PayloadServiceGrpc::newBlockingStub);
+    public YcLockboxAwsCredentials(String lockboxEntry) {
         String keyId = null;
         String keySecret = null;
-        try {
-            GetPayloadRequest request = GetPayloadRequest.newBuilder()
-                    .setSecretId(lockboxEntryName).build();
-            Payload response = service.get(request);
-            if (response!=null) {
-                for (Payload.Entry e : response.getEntriesList()) {
-                    LOG.debug("Processing Yandex Cloud Lockbox entry: {}", e.getKey());
-                    if ( ENTRY_ID.equalsIgnoreCase(e.getKey()) )
-                        keyId = e.getTextValue();
-                    else if ( ENTRY_SECRET.equalsIgnoreCase(e.getKey()) )
-                        keySecret = e.getTextValue();
-                }
-                if (keyId==null || keySecret==null) {
-                    LOG.warn("Entry {} in the Yandex Cloud Lockbox does not contain entries {} and {}",
-                            lockboxEntryName, ENTRY_ID, ENTRY_SECRET);
-                } else {
-                    LOG.debug("Using AWS access key {}", keyId);
-                }
-            } else {
-                LOG.warn("Missing entry {} in the Yandex Cloud Lockbox", lockboxEntryName);
+        String token = null;
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            // 1. Grab the service account token
+            HttpGet httpGet = new HttpGet("http://169.254.169.254/computeMetadata"
+                    + "/v1/instance/service-accounts/default/token");
+            httpGet.setHeader("Metadata-Flavor", "Google");
+            try (CloseableHttpResponse r = httpClient.execute(httpGet)) {
+                HttpEntity he = r.getEntity();
+                JSONObject root = parse(he.getContent());
+                EntityUtils.consume(he);
+                token = root.getString("access_token");
             }
-        } finally {
-            // ERROR ManagedChannelOrphanWrapper: *~*~*~
-            // Channel ManagedChannelImpl{logId=1, target=payload.lockbox.api.cloud.yandex.net:443} was not shutdown properly!!! ~*~*~*
-            // Make sure to call shutdown()/shutdownNow() and wait until awaitTermination() returns true.
-            if ( service.getChannel() instanceof ManagedChannel ) {
-                ((ManagedChannel)service.getChannel()).shutdown();
+            // 2. Grab the lockbox entry
+            httpGet = new HttpGet("https://payload.lockbox.api.cloud.yandex.net/"
+                    + "lockbox/v1/secrets/" + lockboxEntry + "/payload");
+            httpGet.setHeader("Authorization", "Bearer " + token);
+            try (CloseableHttpResponse r = httpClient.execute(httpGet)) {
+                int statusCode = r.getStatusLine().getStatusCode();
+                if (statusCode != 200) {
+                    throw new RuntimeException("Failed to retrieve lockbox entry "
+                            + lockboxEntry + ", status " + String.valueOf(statusCode)
+                            + ": " + r.getStatusLine().getReasonPhrase());
+                }
+                HttpEntity he = r.getEntity();
+                JSONObject root = parse(he.getContent());
+                EntityUtils.consume(he);
+                JSONArray entries = root.getJSONArray("entries");
+                for (int i=0; i<entries.length(); ++i) {
+                    JSONObject entry = entries.getJSONObject(i);
+                    String entryKey = entry.getString("key");
+                    if ( ENTRY_ID.equalsIgnoreCase(entryKey) ) {
+                        keyId = entry.getString("textValue");
+                    } else if ( ENTRY_SECRET.equalsIgnoreCase(entryKey) ) {
+                        keySecret = entry.getString("textValue");
+                    }
+                }
             }
+        } catch(IOException ix) {
+            throw new RuntimeException("Failed to retrieve lockbox entry " + lockboxEntry, ix);
         }
-        this.credentials = (keyId==null || keySecret==null) ?
-                null : new BasicAWSCredentials(keyId, keySecret);
+
+        if (keyId==null || keySecret==null) {
+            throw new RuntimeException("Lockbox entry " + lockboxEntry + " does not contain "
+                    + "the required entries (" + ENTRY_ID + "," + ENTRY_SECRET + ")");
+        }
+        this.credentials = new BasicAWSCredentials(keyId, keySecret);
     }
 
     @Override
@@ -77,6 +88,13 @@ public class YcLockboxAwsCredentials implements AWSCredentialsProvider {
     @Override
     public void refresh() {
         /* noop */
+    }
+
+    private JSONObject parse(InputStream is) throws IOException {
+        final String text = new BufferedReader(
+                new InputStreamReader(is, StandardCharsets.UTF_8))
+                .lines().collect(Collectors.joining("\n"));
+        return new JSONObject(text);
     }
 
 }
