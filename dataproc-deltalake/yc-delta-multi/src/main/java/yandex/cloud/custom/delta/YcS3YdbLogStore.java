@@ -38,7 +38,7 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3DynamoDBLogStore.class);
 
-    public static final String VERSION = "YcS3YdbLogStore 1.0.2023-02-24";
+    public static final String VERSION = "YcS3YdbLogStore 1.1-SNAPSHOT";
 
     /**
      * Configuration keys for the DynamoDB client.
