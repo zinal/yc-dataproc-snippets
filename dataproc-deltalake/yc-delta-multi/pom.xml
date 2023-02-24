@@ -18,7 +18,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.yandex.cloud</groupId>
   <artifactId>yc-delta-multi-dp21</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <name>Yandex Data Proc DeltaLake support</name>
   <packaging>jar</packaging>
 
