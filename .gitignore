@@ -1,4 +1,5 @@
 .vscode/
+.metals/
 tmp/
 target/
 .DS_Store
