@@ -10,9 +10,29 @@ Delta Lake решает задачу обновления данных в ана
 
 Стабильные образы Data Proc (версии 2.0.x) основаны на Apache Spark 3.0.3. В соответствии с [официальной таблицей совместимости](https://docs.delta.io/latest/releases.html), в такой конфигурации может использоваться Delta Lake [версии 0.8.0](https://github.com/delta-io/delta/releases/tag/v0.8.0).
 
-Для использования Delta Lake в сочетании с Data Proc 2.0 
+Основным ограничением этой версии Delta Lake является запрет на конкурентную модификацию таблиц в S3-совместимом хранилище (см. [примечание](https://docs.delta.io/0.8.0/delta-storage.html#amazon-s3) в официальной документации). Это ограничение означает, что при работе с таблицами Delta Lake необходимо координировать операции записи таким образом, чтобы исключить одновременную модификацию данных в одной таблице из разных кластеров Data Proc, а также из разных заданий Spark в рамках одного кластера. Нарушение этого требования может привести к неожиданной потере хранимой в таблице информации.
 
-Основным ограничением этой версии Delta Lake является запрет на конкурентную модификацию таблиц в S3-совместимом хранилище (см. [примечание](https://docs.delta.io/0.8.0/delta-storage.html#amazon-s3) в официальной документации).
+Для использования Delta Lake в сочетании с Data Proc 2.0 достаточно в зависимостях заданий добавить библиотеку `delta-core_2.12-0.8.0.jar`, а также установить следующие свойства Spark:
+* `spark.sql.extensions` в значение `io.delta.sql.DeltaSparkSessionExtension`
+* `spark.sql.catalog.spark_catalog` в значение `org.apache.spark.sql.delta.catalog.DeltaCatalog`
+
+Библиотека `delta-core_2.12-0.8.0.jar` может быть добавлена в зависимости заданий любым из следующих способов:
+1. через установку свойства `spark.jars` для конкретного задания либо для кластера в целом, значением является URL файла библиотеки, файл должен быть доступен по указанному URL;
+2. через установку свойства `spark.jars.packages` в значение `io.delta:delta-core_2.12:0.8.0`, должен быть настроен сетевой доступ в Maven Central, либо сконфигурирован альтернативный репозиторий Maven;
+3. через установку свойств `spark.driver.extraClassPath` и `spark.executor.extraClassPath` в полный путь к файлу библиотеки, файл должен быть [скопирован на все узлы кластера](../dataproc-copy-files/).
+
+Если все данные заданий используют формат хранения Delta Lake, то настройка S3A Committers не требуется, поскольку Delta Lake реализует собственный алгоритм управления записью в S3-совместимые хранилища, функционально эквивалентный S3A Committers. Задание может одновременно работать с таблицами Delta Lake и "обычными" данными Spark в форматах Parquet, ORC, JSON или CSV; в этом случае для эффективной записи "обычных" данных необходимо [использовать S3A Committers](../dataproc-s3a-committers/).
+
+Пример запуска и использования сессии Spark SQL для работы с таблицами Delta Lake:
+
+```
+spark-sql --executor-memory 20g --executor-cores 4 \
+  --conf spark.executor.heartbeatInterval=10s \
+  --conf spark.jars.packages=io.delta:delta-core_2.12:0.8.0 \
+  --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+  --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
+```
+
 
 ## 3. Расширенные возможности Delta Lake для бета-образов Data Proc 2.1
 
