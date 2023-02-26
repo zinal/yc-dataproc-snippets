@@ -92,7 +92,7 @@ spark-sql>
 * [функция Z-Ordering](https://docs.delta.io/2.0.2/optimizations-oss.html#z-ordering-multi-dimensional-clustering), реализующая многомерную кластеризацию таблиц Delta Lake для ускорения запросов с ограничениями на колонки, используемые для кластеризации;
 * [поддержка динамической перезаписи партиций](https://docs.delta.io/2.0.2/delta-batch.html#dynamic-partition-overwrites), dynamic partition overwrite;
 * автоматизированная [компактификация мелких файлов в более крупные](https://docs.delta.io/2.0.2/optimizations-oss.html#compaction-bin-packing) для увеличения производительности запросов;
-* возможность [восстановления отката таблицы к предыдущему состоянию](https://docs.delta.io/2.0.2/delta-utility.html#restore-a-delta-table-to-an-earlier-state).
+* возможность [отката таблицы к предыдущему состоянию](https://docs.delta.io/2.0.2/delta-utility.html#restore-a-delta-table-to-an-earlier-state).
 
 ### 3.1. Однокластерный режим Delta Lake 2.0.2
 
