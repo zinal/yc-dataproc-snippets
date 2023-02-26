@@ -85,18 +85,26 @@ spark-sql>
 
 Бета-образы Data Proc версии 2.1 комплектуются компонентами Apache Spark версии 3.2.1, что позволяет использовать Delta Lake [версии 2.0.2](https://github.com/delta-io/delta/releases/tag/v2.0.2).
 
+Чтобы получить доступ к бета-версиям образов Data Proc версии 2.1, запросите его через службу технической поддержки Yandex Cloud.
+
 Основными преимуществами Delta Lake 2.0.2, по сравнению с версией 0.8.0, является:
 * поддержка [мультикластерного режима](https://docs.delta.io/2.0.2/delta-storage.html#multi-cluster-setup), обеспечивающего автоматическую координацию изменений данных в одной таблице из разных заданий Spark и кластеров Data Proc;
-* поддержка идемпотентных операций модификации данных, позволяющих решить задачу однократного применения сообщений при потоковой обработке;
+* функция [идемпотентных операций модификации данных](https://docs.delta.io/latest/delta-streaming.html#idempotent-table-writes-in-foreachbatch), позволяющая решить задачу однократного применения изменений при потоковой обработке данных;
 * [функция Change Data Feed](https://docs.delta.io/2.0.2/delta-change-data-feed.html) для таблиц Delta Lake, обеспечивающая отслеживание изменений в данных;
 * [функция Z-Ordering](https://docs.delta.io/2.0.2/optimizations-oss.html#z-ordering-multi-dimensional-clustering), реализующая многомерную кластеризацию таблиц Delta Lake для ускорения запросов с ограничениями на колонки, используемые для кластеризации;
 * [поддержка динамической перезаписи партиций](https://docs.delta.io/2.0.2/delta-batch.html#dynamic-partition-overwrites), dynamic partition overwrite;
 * автоматизированная [компактификация мелких файлов в более крупные](https://docs.delta.io/2.0.2/optimizations-oss.html#compaction-bin-packing) для увеличения производительности запросов;
 * возможность [восстановления отката таблицы к предыдущему состоянию](https://docs.delta.io/2.0.2/delta-utility.html#restore-a-delta-table-to-an-earlier-state).
 
-Чтобы получить доступ к бета-версиям образов Data Proc версии 2.1, запросите его через службу технической поддержки Yandex Cloud.
+При использовании однокластерного режима настройки для использования версии Delta Lake 2.0.2 аналогичны приведённым выше для версии 0.8.0. При настройке зависимостей необходимо учитывать, что в версии Delta Lake 1.2 из библиотеки `delta-core` была выделена дополнительная библиотека `delta-storage`, поэтому состав необходимых зависимостей включает в себя:
+* в варианте указания пакетов Maven: `io.delta:delta-core_2.12:2.0.2` и `io.delta:delta-storage:2.0.2`;
+* в варианте указания конкретных файлов: `delta-core_2.12-2.0.2.jar` и `delta-storage-2.0.2.jar`.
 
-Если вы хотите задействовать мультикластерный режим Delta Lake, выполните перечисленные ниже шаги подготовки:
+Мультикластерный режим Delta Lake использует дополнительный ресурс - базу данных DynamoDB - для координации доступа к таблицам Delta Lake перед внесением в них изменений. В среде Yandex Cloud мультикластерный режим Delta Lake можно использовать, задействовав [управляемый сервис YDB](https://cloud.yandex.ru/services/ydb) в качестве прозрачной замены DynamoDB.
+
+> **Примечание.** Для выполнения приведённых ниже примеров команд требуется наличие установленного и настроенного [YC CLI](https://cloud.yandex.ru/docs/cli/operations/install-cli), а также утилита `jq` для обработки данных в формате JSON.
+
+Если вы хотите задействовать мультикластерный режим Delta Lake, выполните перечисленные ниже шаги для подготовки среды выполнения:
 
 1. Создайте бессерверную базу данных YDB, которая используется как замена DynamoDB для координации доступа к таблицам Delta Lake. Пример команд YC CLI по созданию базы данных, в результате выполнения которых информация о созданной базе данных будет сохранена в файле `info-delta1.json`:
 
@@ -124,8 +132,8 @@ spark-sql>
 4. Поместите данные созданного статического ключа в запись сервиса [Yandex Lockbox](https://cloud.yandex.ru/services/lockbox). Сохраните идентификационную информацию созданной записи в файле `info-lb1.json`:
 
     ```bash
-    key_id=`cat info-delta1-sa1-key.json | jq -r .access_key.key_id`
-    key_val=`cat info-delta1-sa1-key.json | jq -r .secret`
+    key_id=`cat info-sa1key.json | jq -r .access_key.key_id`
+    key_val=`cat info-sa1key.json | jq -r .secret`
     yc lockbox secret create --name delta1-lb1 \
         --payload '[{"key": "key-id", "text_value": "'${key_id}'"}, {"key": "key-secret", "text_value": "'${key_val}'"}]' \
         --format json > info-lb1.json
@@ -137,6 +145,7 @@ spark-sql>
     lb_id=`cat info-lb1.json | jq -r .id`
     ```
 
+6. Необходимые библиотеки Delta Lake 2.0.2, а также надстройка для подключения к YDB вместо DynamoDB
 
 ```bash
 ls -l /s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar
