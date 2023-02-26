@@ -129,7 +129,7 @@ spark-sql>
     yc iam access-key create --service-account-name delta1-sa1 --format json > info-sa1key.json
     ```
 
-4. Поместите данные созданного статического ключа в запись сервиса [Yandex Lockbox](https://cloud.yandex.ru/services/lockbox). Сохраните идентификационную информацию созданной записи в файле `info-lb1.json`:
+4. Поместите данные созданного статического ключа в запись сервиса [Yandex Lockbox](https://cloud.yandex.ru/services/lockbox), установив атрибут `key-id` в идентификатор ключа, а атрибут `key-secret` в его секретную часть. Сохраните идентификационную информацию созданной записи в файле `info-lb1.json`:
 
     ```bash
     key_id=`cat info-sa1key.json | jq -r .access_key.key_id`
@@ -145,24 +145,52 @@ spark-sql>
     lb_id=`cat info-lb1.json | jq -r .id`
     ```
 
-6. Необходимые библиотеки Delta Lake 2.0.2, а также надстройка для подключения к YDB вместо DynamoDB
+6. Разрешите сервисным учётным записям, используемым при работе кластеров Data Proc (в примере ниже - `dp1`), доступ к данным Lockbox (на уровне каталога в целом либо на уровне конкретной записи Lockbox):
 
-```bash
-ls -l /s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar
-```
+    ```bash
+    yc resource-manager folder add-access-binding --id ${cur_folder} --service-account-name dp1 --role lockbox.payloadViewer
+    ```
 
-```
-spark-sql --executor-memory 20g --executor-cores 4 \
-  --conf spark.executor.heartbeatInterval=10s \
-  --conf spark.driver.extraClassPath=/s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar \
-  --conf spark.executor.extraClassPath=/s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar \
-  --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
-  --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  --conf spark.databricks.delta.optimize.maxThreads=20 \
-  --conf spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
-  --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etngt3b6eh9qfc80vt54/ \
-  --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=e6qr20sbgn3ckpalh54p
-```
+7. Необходимые библиотеки Delta Lake 2.0.2, а также классы-надстройки для подключения к YDB доступны в виде собранного архива [yc-delta-multi-dp21-1.0-fatjar.jar](yc-delta-multi/bin/yc-delta-multi-dp21-1.0-fatjar.jar). Исходный код надстройки доступен в [репозитории](yc-delta-multi/). Собранный архив необходимо разместить в бакете Yandex Object Storage. Права доступа к бакету должны обеспечивать возможность чтения файла архива сервисными учётными записями кластеров Data Proc.
+
+8. Установите необходимые настройки для функционирования Delta Lake, на уровне отдельного задания либо на уровне кластера Data Proc:
+    * зависимость от архива из пункта 6 выше, через свойство `spark.jars`, либо через сочетание свойств `spark.executor.extraClassPath` и `spark.driver.extraClassPath`;
+    * `spark.sql.extensions` в значение `io.delta.sql.DeltaSparkSessionExtension`;
+    * `spark.sql.catalog.spark_catalog` в значение `org.apache.spark.sql.delta.catalog.DeltaCatalog`;
+    * `spark.delta.logStore.s3a.impl` в значение `ru.yandex.cloud.custom.delta.YcS3YdbLogStore`;
+    * `spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint` в значение точки подключения к Document API YDB для созданной на шаге (1) базы данных (значение поля `document_api_endpoint` из файла `info-delta1.json`);
+    * `spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox` в значение идентификатора элемента Lockbox, полученного на шаге (5).
+
+9. Проверьте работоспособность Delta Lake, создав тестовую таблицу аналогично показанному ниже примеру:
+
+    ```
+    $ spark-sql --executor-memory 20g --executor-cores 4 \
+      --jars /s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar \
+      --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+      --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+      --conf spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
+      --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etngt3b6eh9qfc80vt54/ \
+      --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=e6qr20sbgn3ckpalh54p
+    ...
+    spark-sql> CREATE DATABASE testdelta;
+    ...
+    spark-sql> USE testdelta;
+    ...
+    spark-sql> CREATE TABLE tab1(a INTEGER NOT NULL, b VARCHAR(100)) USING DELTA;
+    ...
+    spark-sql> INSERT INTO tab1 VALUES (1,'One'), (2,'Two'), (3,'Three');
+    ...
+    spark-sql> SELECT * FROM tab1;
+    ...
+    ```
+
+## 4. Полезные свойства для настройки Delta Lake
+
+### 4.1. Количество параллельных заданий оператора OPTIMIZE
+
+Оператор `OPTIMIZE` в Delta Lake 2.0.2 запускает несколько параллельных заданий для объединения более мелких файлов в более крупные. Количество параллельных заданий регулируется свойством `spark.databricks.delta.optimize.maxThreads`, по умолчанию используется значение `10`. При обработке очень больших таблиц для ускорения можно использовать значительно большие значения, например `100` или даже `1000`, если ресурсы кластера позволяют запустить такое количество параллельных операций.
+
+## 5. Пример операторов для генерации таблицы Delta Lake на 1 миллиард записей
 
 ```sql
 USE demo2;
