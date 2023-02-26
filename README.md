@@ -9,6 +9,7 @@
 * [Копирование дополнительных файлов на узлы Data Proc](dataproc-copy-files/)
 * [Настройка кластера Data Proc для работы с Apache Kafka](dataproc-kafka/)
 * [Управление дополнительными компонентами Python](dataproc-python-repo/)
+* [Использование Delta Lake](dataproc-deltalake/)
 
 Примеры вспомогательных скриптов и программ:
 * [Раскраска вычислительных ресурсов Data Proc](dp-compute-colorizer/)

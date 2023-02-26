@@ -9,6 +9,7 @@
 * [Копирование дополнительных файлов на узлы Data Proc](https://github.com/zinal/yc-dataproc-snippets/tree/main/dataproc-copy-files/)
 * [Настройка кластера Data Proc для работы с Apache Kafka](https://github.com/zinal/yc-dataproc-snippets/tree/main/dataproc-kafka/)
 * [Управление дополнительными компонентами Python](https://github.com/zinal/yc-dataproc-snippets/tree/main/dataproc-python-repo/)
+* [Использование Delta Lake](https://github.com/zinal/yc-dataproc-snippets/tree/main/dataproc-deltalake/)
 
 Примеры вспомогательных скриптов и программ:
 * [Раскраска вычислительных ресурсов Data Proc](https://github.com/zinal/yc-dataproc-snippets/tree/main/dp-compute-colorizer/)
