@@ -83,18 +83,45 @@ spark-sql>
 
 ## 3. Расширенные возможности Delta Lake для бета-образов Data Proc 2.1
 
+Бета-образы Data Proc версии 2.1 комплектуются компонентами Apache Spark версии 3.2.1, что позволяет использовать Delta Lake [версии 2.0.2](https://github.com/delta-io/delta/releases/tag/v2.0.2).
+
+Основными преимуществами Delta Lake 2.0.2, по сравнению с версией 0.8.0, является:
+* поддержка [мультикластерного режима](https://docs.delta.io/2.0.2/delta-storage.html#multi-cluster-setup), обеспечивающего автоматическую координацию изменений данных в одной таблице из разных заданий Spark и кластеров Data Proc;
+* поддержка идемпотентных операций модификации данных, позволяющих решить задачу однократного применения сообщений при потоковой обработке;
+* [функция Change Data Feed](https://docs.delta.io/2.0.2/delta-change-data-feed.html) для таблиц Delta Lake, обеспечивающая отслеживание изменений в данных;
+* [функция Z-Ordering](https://docs.delta.io/2.0.2/optimizations-oss.html#z-ordering-multi-dimensional-clustering), реализующая многомерную кластеризацию таблиц Delta Lake для ускорения запросов с ограничениями на колонки, используемые для кластеризации;
+* [поддержка динамической перезаписи партиций](https://docs.delta.io/2.0.2/delta-batch.html#dynamic-partition-overwrites), dynamic partition overwrite;
+* автоматизированная [компактификация мелких файлов в более крупные](https://docs.delta.io/2.0.2/optimizations-oss.html#compaction-bin-packing) для увеличения производительности запросов;
+* возможность [восстановления отката таблицы к предыдущему состоянию](https://docs.delta.io/2.0.2/delta-utility.html#restore-a-delta-table-to-an-earlier-state).
+
+Чтобы получить доступ к бета-версиям образов Data Proc версии 2.1, запросите его через службу технической поддержки Yandex Cloud.
+
+Если вы хотите задействовать мультикластерный режим Delta Lake, выполните перечисленные ниже шаги подготовки:
+
+1. Создайте бессерверную базу данных YDB, которая используется как замена DynamoDB для координации доступа к таблицам Delta Lake. Пример команд YC CLI по созданию базы данных, в результате выполнения которых информация о созданной базе данных будет сохранена в файле `info-delta1.json`:
+
+    ```bash
+    yc ydb database create delta1 --serverless
+    yc ydb database get delta1 --format json >info-delta1.json
+    ```
+
+2. Создайте сервисную учётную запись для доступа к базе данных YDB, и настройте для неё права доступа путём присвоения роли `ydb.editor` в каталоге Облака, содержащем созданную ранее базу данных YDB:
+
+    ```bash
+    yc iam service-account create delta1-sa1
+
+    cur_profile=`yc config profile list | grep -E ' ACTIVE$' | (read x y && echo $x)`
+    cur_folder=`yc config profile get ${cur_profile} | grep -E '^folder-id: ' | (read x y && echo $y)`
+    yc resource-manager folder add-access-binding --id ${cur_folder} --service-account-name delta1-sa1 --role ydb.editor
+    ```
+
+3. Создайте статический ключ для подключения от имени созданной сервисной учётной записи:
+
+    ```bash
+    yc iam access-key create --service-account-name delta1-sa1 --format json > info-delta1-sa1-key.json
+    ```
+
 ```bash
-yc ydb database create delta1 --serverless
-yc ydb database get delta1 --format json >info-delta1.json
-
-yc iam service-account create delta1-sa1
-
-cur_profile=`yc config profile list | grep -E ' ACTIVE$' | (read x y && echo $x)`
-cur_folder=`yc config profile get ${cur_profile} | grep -E '^folder-id: ' | (read x y && echo $y)`
-yc resource-manager folder add-access-binding --id ${cur_folder} --service-account-name delta1-sa1 --role ydb.editor
-
-yc iam access-key create --service-account-name delta1-sa1 --format json > info-delta1-sa1-key.json
-
 cur_key_id=`cat info-delta1-sa1-key.json | jq -r .access_key.key_id`
 cur_key_val=`cat info-delta1-sa1-key.json | jq -r .secret`
 yc lockbox secret create --name delta1-lb1 \
