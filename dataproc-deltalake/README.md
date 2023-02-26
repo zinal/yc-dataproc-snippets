@@ -26,13 +26,60 @@ Delta Lake решает задачу обновления данных в ана
 Пример запуска и использования сессии Spark SQL для работы с таблицами Delta Lake:
 
 ```
-spark-sql --executor-memory 20g --executor-cores 4 \
+$ spark-sql --executor-memory 20g --executor-cores 4 \
   --conf spark.executor.heartbeatInterval=10s \
   --conf spark.jars.packages=io.delta:delta-core_2.12:0.8.0 \
   --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
+...
+Ivy Default Cache set to: /home/ubuntu/.ivy2/cache
+The jars for the packages stored in: /home/ubuntu/.ivy2/jars
+:: loading settings :: url = jar:file:/usr/lib/spark/jars/ivy-2.4.0.jar!/org/apache/ivy/core/settings/ivysettings.xml
+io.delta#delta-core_2.12 added as a dependency
+:: resolving dependencies :: org.apache.spark#spark-submit-parent-d1295d4c-d10d-464c-aa11-e645cedd5da9;1.0
+	confs: [default]
+	found io.delta#delta-core_2.12;0.8.0 in central
+	found org.antlr#antlr4;4.7 in central
+...
+downloading https://repo1.maven.org/maven2/io/delta/delta-core_2.12/0.8.0/delta-core_2.12-0.8.0.jar ...
+	[SUCCESSFUL ] io.delta#delta-core_2.12;0.8.0!delta-core_2.12.jar (168ms)
+...
+23/02/26 14:57:37 INFO SharedState: Warehouse path is 's3a://dproc-wh/wh'.
+23/02/26 14:57:38 INFO SessionState: Created HDFS directory: /tmp/hive/ubuntu
+23/02/26 14:57:38 INFO SessionState: Created local directory: /tmp/ubuntu
+23/02/26 14:57:38 INFO SessionState: Created HDFS directory: /tmp/hive/ubuntu/8e4fa862-2e74-4423-ad8a-241082ec2c88
+23/02/26 14:57:38 INFO SessionState: Created local directory: /tmp/ubuntu/8e4fa862-2e74-4423-ad8a-241082ec2c88
+23/02/26 14:57:38 INFO SessionState: Created HDFS directory: /tmp/hive/ubuntu/8e4fa862-2e74-4423-ad8a-241082ec2c88/_tmp_space.db
+23/02/26 14:57:38 INFO SparkContext: Running Spark version 3.0.3
+...
+23/02/26 14:57:59 INFO metastore: Connected to metastore.
+Spark master: yarn, Application Id: application_1677423247688_0004
+23/02/26 14:58:00 INFO SparkSQLCLIDriver: Spark master: yarn, Application Id: application_1677423247688_0004
+spark-sql> CREATE DATABASE testdelta;
+Time taken: 4.248 seconds
+spark-sql> USE testdelta;
+Time taken: 0.056 seconds
+spark-sql> CREATE TABLE tab1(a INTEGER NOT NULL, b VARCHAR(100)) USING DELTA;
+23/02/26 15:04:07 INFO DeltaLog: Creating initial snapshot without metadata, because the directory is empty
+...
+23/02/26 15:04:09 INFO CreateDeltaTableCommand: Table is path-based table: false. Update catalog with mode: Create
+23/02/26 15:04:09 WARN HiveExternalCatalog: Couldn't find corresponding Hive SerDe for data source provider delta. Persisting data source table `testdelta`.`tab1` into Hive metastore in Spark SQL specific format, which is NOT compatible with Hive.
+Time taken: 3.286 seconds
+spark-sql> INSERT INTO tab1 VALUES (1,'One'), (2,'Two'), (3,'Three');
+...
+Time taken: 3.684 seconds
+spark-sql> UPDATE tab1 SET b=b || ' ** ' || CAST(a AS VARCHAR(10));
+...
+Time taken: 3.803 seconds
+spark-sql> SELECT * FROM tab1;
+3	Three ** 3
+2	Two ** 2
+1	One ** 1
+Time taken: 1.166 seconds, Fetched 3 row(s)
+spark-sql> 
 ```
 
+При настройке перечисленных выше свойств Spark для использования Delta Lake на уровне кластера Data Proc, работа с таблицами Delta Lake может производиться через Spark Thrift Server, включение которого осуществляется свойством `dataproc:hive.thrift.impl=spark`, как указано в [документации Data Proc](https://cloud.yandex.ru/docs/data-proc/concepts/settings-list#spark-thrift-server). Для подключения к Spark Thrift Server может использоваться любая совместимая SQL IDE, например, [DBeaver](https://dbeaver.io/).
 
 ## 3. Расширенные возможности Delta Lake для бета-образов Data Proc 2.1
 

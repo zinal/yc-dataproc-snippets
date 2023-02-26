@@ -13,7 +13,7 @@ YC_ZONE=ru-central1-c
 YC_SUBNET=default-ru-central1-c
 YC_BUCKET=dproc-wh
 YC_SA=dp1
-YC_MS_URI='thrift://rc1c-dataproc-m-jvvt69wu2eiy8vra.mdb.yandexcloud.net:9083'
+YC_MS_URI='thrift://rc1c-dataproc-m-k4gpw2jv9xjkevlj.mdb.yandexcloud.net:9083'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
@@ -45,4 +45,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh'
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh' \
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_geesefs.sh,args='${YC_BUCKET}
