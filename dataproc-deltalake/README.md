@@ -115,22 +115,27 @@ spark-sql>
     yc resource-manager folder add-access-binding --id ${cur_folder} --service-account-name delta1-sa1 --role ydb.editor
     ```
 
-3. Создайте статический ключ для подключения от имени созданной сервисной учётной записи:
+3. Создайте статический ключ для подключения от имени созданной сервисной учётной записи, временно сохранив данные ключа в файле `info-sa1key.json`:
 
     ```bash
-    yc iam access-key create --service-account-name delta1-sa1 --format json > info-delta1-sa1-key.json
+    yc iam access-key create --service-account-name delta1-sa1 --format json > info-sa1key.json
     ```
 
-```bash
-cur_key_id=`cat info-delta1-sa1-key.json | jq -r .access_key.key_id`
-cur_key_val=`cat info-delta1-sa1-key.json | jq -r .secret`
-yc lockbox secret create --name delta1-lb1 \
-  --payload '[{"key": "key-id", "text_value": "'${cur_key_id}'"}, {"key": "key-secret", "text_value": "'${cur_key_val}'"}]' \
-  --format json > info-delta1-lb1.json
+4. Поместите данные созданного статического ключа в запись сервиса [Yandex Lockbox](https://cloud.yandex.ru/services/lockbox). Сохраните идентификационную информацию созданной записи в файле `info-lb1.json`:
 
-cur_lb_id=`cat info-delta1-lb1.json | jq -r .id`
+    ```bash
+    key_id=`cat info-delta1-sa1-key.json | jq -r .access_key.key_id`
+    key_val=`cat info-delta1-sa1-key.json | jq -r .secret`
+    yc lockbox secret create --name delta1-lb1 \
+        --payload '[{"key": "key-id", "text_value": "'${key_id}'"}, {"key": "key-secret", "text_value": "'${key_val}'"}]' \
+        --format json > info-lb1.json
+    ```
 
-```
+5. Запишите идентификатор записи Lockbox для последующего использования:
+
+    ```bash
+    lb_id=`cat info-lb1.json | jq -r .id`
+    ```
 
 
 ```bash
