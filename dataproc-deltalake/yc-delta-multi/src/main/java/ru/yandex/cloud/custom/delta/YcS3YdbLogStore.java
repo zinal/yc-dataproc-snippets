@@ -1,4 +1,4 @@
-package yandex.cloud.custom.delta;
+package ru.yandex.cloud.custom.delta;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -23,7 +23,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.model.*;
 
-import yandex.cloud.custom.ddb.YcLockboxAwsCredentials;
+import ru.yandex.cloud.custom.ddb.YcLockboxAwsCredentials;
 
 /**
  * A customized implementation of {@link S3DynamoDBLogStore} that works with
@@ -38,7 +38,8 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3DynamoDBLogStore.class);
 
-    public static final String VERSION = "YcS3YdbLogStore 1.1-SNAPSHOT";
+    // 1.1-SNAPSHOT
+    public static final String VERSION = "YcS3YdbLogStore 1.0-2023.02.26";
 
     /**
      * Configuration keys for the DynamoDB client.

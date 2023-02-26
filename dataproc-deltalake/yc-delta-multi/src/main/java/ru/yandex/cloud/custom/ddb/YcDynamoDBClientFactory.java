@@ -1,4 +1,4 @@
-package yandex.cloud.custom.ddb;
+package ru.yandex.cloud.custom.ddb;
 
 import java.io.IOException;
 import com.google.common.base.Preconditions;

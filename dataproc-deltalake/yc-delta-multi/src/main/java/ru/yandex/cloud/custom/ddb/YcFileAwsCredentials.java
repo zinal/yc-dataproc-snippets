@@ -1,4 +1,4 @@
-package yandex.cloud.custom.ddb;
+package ru.yandex.cloud.custom.ddb;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
