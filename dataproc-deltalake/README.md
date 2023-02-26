@@ -165,7 +165,7 @@ spark-sql>
 
     ```
     $ spark-sql --executor-memory 20g --executor-cores 4 \
-      --jars /s3data/jars/yc-delta-multi-1.0-SNAPSHOT-fatjar.jar \
+      --jars /s3data/jars/yc-delta-multi-dp21-1.0-fatjar.jar \
       --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
       --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
       --conf spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
@@ -272,7 +272,7 @@ SELECT num,COALESCE(tv,TIMESTAMP '1980-01-01 00:00:00') AS tv,a,b,c,d,tv_year,tv
 FROM demo1_uuid1g_v;
 
 -- Пересборка данных для ускорения доступа
-optimize deltatab1;
+OPTIMIZE deltatab1;
 
 -- Примеры запросов
 select substring(a,1,1) as al, count(*) from deltatab1 group by substring(a,1,1) order by substring(a,1,1);
