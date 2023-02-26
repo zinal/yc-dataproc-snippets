@@ -184,31 +184,31 @@ spark-sql>
     ...
     ```
 
-## 4. Полезные свойства для настройки Delta Lake
+## 4. Полезная информация по настройке и применению Delta Lake
 
 ### 4.1. Количество параллельных заданий оператора OPTIMIZE
 
 Оператор `OPTIMIZE` в Delta Lake 2.0.2 запускает несколько параллельных заданий для объединения более мелких файлов в более крупные. Количество параллельных заданий регулируется свойством `spark.databricks.delta.optimize.maxThreads`, по умолчанию используется значение `10`. При обработке очень больших таблиц для ускорения можно использовать значительно большие значения, например `100` или даже `1000`, если ресурсы кластера позволяют запустить такое количество параллельных операций.
 
-## 5. Пример операторов для генерации таблицы Delta Lake на 1 миллиард записей
+### 4.2. Синтаксис для конвертации партиционированных таблиц
+
+Delta Lake поддерживает оператор `CONVERT TO DELTA` для преобразования обычных таблиц Spark SQL в формат Delta Lake. При работе с партиционированными таблицами у этого оператора используется специальный вариант синтаксиса с указанием колонок партиционирования, как показано в примере ниже:
 
 ```sql
-USE demo2;
+-- Пример запроса для преобразования обычной партиционированной таблицы в формат Delta Lake
+CONVERT TO DELTA megatab_1g PARTITIONED BY (tv_year INT, tv_month INT);
+```
 
-CREATE TABLE deltatab1 (
-  num bigint not null,
-  tv timestamp not null,
-  a varchar(40) not null,
-  b varchar(40) not null,
-  c varchar(40) not null,
-  d varchar(40) not null,
-  tv_year INT not null,
-  tv_month INT not null,
-  tv_day INT not null
-) USING DELTA
-  PARTITIONED BY (tv_year, tv_month);
-  
+## 5. Пример операторов для генерации таблицы Delta Lake на 1 миллиард записей
 
+Приведённый ниже набор команд может использоваться для проверки стабильности функционирования кластера Data Proc с библиотеками Delta Lake под нагрузкой, связанной с генерацией и записью значительного объёма данных.
+
+```sql
+CREATE DATABASE demo1;
+
+USE demo1;
+
+-- Представление для генерации 1000 строк с последовательными числами 0-999
 CREATE VIEW demo1_tab1k_v AS (
 WITH tab100(a) AS (
   (SELECT 0 AS a) UNION ALL (SELECT 1) UNION ALL (SELECT 2) UNION ALL (SELECT 3) UNION ALL (SELECT 4) UNION ALL
@@ -234,11 +234,13 @@ WITH tab100(a) AS (
   tab1k(a) AS (SELECT x.a + 100*y.a AS a FROM tab100 x, tab100 y WHERE y.a<10)
 SELECT CAST(x.a AS BIGINT) AS num FROM tab1k x);
 
+-- Представление для генерации 1 миллиарда строк с последовательными числами 1-1g
 CREATE VIEW demo1_tab1g_v AS (
   SELECT 1 + x.num + 1000*y.num + 1000000*z.num AS num 
   FROM demo1_tab1k_v x, demo1_tab1k_v y, demo1_tab1k_v z
 );
 
+-- Представление для генерации выходного набора записей
 CREATE VIEW demo1_uuid1g_v AS (
   SELECT num, tv, 
      extract(YEAR FROM tv) AS tv_year,
@@ -251,17 +253,28 @@ CREATE VIEW demo1_uuid1g_v AS (
         FROM demo1_tab1g_v x INNER JOIN (SELECT Now() AS tv_now) y ON 1=1)
 );
 
+-- Выходная таблица
+CREATE TABLE deltatab1 (
+  num bigint not null,
+  tv timestamp not null,
+  a varchar(40) not null,
+  b varchar(40) not null,
+  c varchar(40) not null,
+  d varchar(40) not null,
+  tv_year INT not null,
+  tv_month INT not null,
+  tv_day INT not null
+) USING DELTA PARTITIONED BY (tv_year, tv_month);
+
+-- Оператор вставки
 INSERT INTO deltatab1
-SELECT /*+ REPARTITION(50,tv_year,tv_month) */
-  num,COALESCE(tv,TIMESTAMP '1980-01-01 00:00:00') AS tv,a,b,c,d,tv_year,tv_month,tv_day
+SELECT num,COALESCE(tv,TIMESTAMP '1980-01-01 00:00:00') AS tv,a,b,c,d,tv_year,tv_month,tv_day
 FROM demo1_uuid1g_v;
 
+-- Пересборка данных для ускорения доступа
 optimize deltatab1;
 
+-- Примеры запросов
 select substring(a,1,1) as al, count(*) from deltatab1 group by substring(a,1,1) order by substring(a,1,1);
-
 select substring(a,1,1) as al, count(*) from deltatab1 where b like '7f%' group by substring(a,1,1) order by substring(a,1,1);
-
-convert to delta megatab_1g partitioned by (tv_year INT, tv_month INT);
-
 ```
