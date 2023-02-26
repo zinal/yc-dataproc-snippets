@@ -125,3 +125,52 @@
 ```bash
 capacity-scheduler:yarn.scheduler.capacity.resource-calculator=org.apache.hadoop.yarn.util.resource.DominantResourceCalculator
 ```
+
+## 4.2 Ошибки Heartbeat и принудительное отключение узлов исполнения
+
+При выполнении заданий Spark узлы исполнения (executor nodes) регулярно отправляют узлу-драйверу (driver) специальные сообщения Heartbeat, содержащие информацию о состоянии узла исполнения и о прогрессе выполнения текущих операций. Периодичность отправки таких сообщений регулируется параметром `spark.executor.heartbeatInterval` (по умолчанию - 10 секунд). При длительном отсутствии сообщений heartbeat (регулируется параметром `spark.network.timeout`) драйвер считает, что соответствующий узел исполнения неработоспособен, и запрашивает у среды исполнения (в случае Data Proc - у ресурсного менеджера YARN) аварийное завершение неработающего узла.
+
+Причиной отсутствия сообщений heartbeat могут являеться фактическое аварийное завершение или зависание узла исполнения, либо проблемы сетевого взаимодействия в кластере. На практике наиболее частой причиной потерь heartbeat-сообщений являются ситуации исчерпания оперативной памяти на стороне узлов исполнения. Стандартные исключения `java.lang.OutOfMemoryError` для соответствующего узла при этом могут не фиксироваться в логах заданий из-за сбоев при работе протоколирования в условиях нехватки оперативной памяти.
+
+На стороне драйвера события потери связи с узлом-исполнителем из-за длительного отсутствия сообщений Heartbeat фиксируются в логах сообщениями следующего вида:
+
+```
+23/02/23 20:22:09 WARN TaskSetManager: Lost task 28.0 in stage 13.0 (TID 242) 
+        (rc1c-dataproc-g-f1c1fa-ykeh.mdb.yandexcloud.net executor 5): ExecutorLostFailure 
+        (executor 5 exited caused by one of the running tasks) 
+        Reason: Executor heartbeat timed out after 138218 ms
+```
+
+В логах зависшего узла-исполнителя может не быть никаких сообщений об ошибках. В некоторых случаях фиксируются ошибки `java.lang.OutOfMemoryError` на произвольных участках кода. Кроме того, могут явно фиксироваться ошибки при отправке сообщений Heartbeat (таймаут отправки в методе `Executor.reportHeartBeat()`):
+
+```
+23/02/24 09:32:05 WARN Executor: Issue communicating with driver in heartbeater
+org.apache.spark.rpc.RpcTimeoutException: Futures timed out after [10000 milliseconds]. 
+        This timeout is controlled by spark.executor.heartbeatInterval
+	at org.apache.spark.rpc.RpcTimeout.org$apache$spark$rpc$RpcTimeout$$createRpcTimeoutException(RpcTimeout.scala:47)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:62)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:58)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:38)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:76)
+	at org.apache.spark.rpc.RpcEndpointRef.askSync(RpcEndpointRef.scala:103)
+	at org.apache.spark.executor.Executor.reportHeartBeat(Executor.scala:1005)
+	at org.apache.spark.executor.Executor.$anonfun$heartbeater$1(Executor.scala:212)
+	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)
+	at org.apache.spark.util.Utils$.logUncaughtExceptions(Utils.scala:2019)
+	at org.apache.spark.Heartbeater$$anon$1.run(Heartbeater.scala:46)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.runAndReset(FutureTask.java:308)
+	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$301(ScheduledThreadPoolExecutor.java:180)
+	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:294)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:750)
+Caused by: java.util.concurrent.TimeoutException: Futures timed out after [10000 milliseconds]
+	at scala.concurrent.impl.Promise$DefaultPromise.ready(Promise.scala:259)
+	at scala.concurrent.impl.Promise$DefaultPromise.result(Promise.scala:263)
+	at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:293)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:75)
+	... 13 more
+```
+
+Если при выполнении заданий возникают систематические ошибки Heartbeat, и нет других признаков сетевых ошибок, то следует изменить пропорцию между количеством параллельно выполняемых операций и количеством оперативной памяти в сторону большего количества оперативной памяти на одну параллельную операцию. Этого можно добиться, уменьшив количество процессорных ядер в составе узла исполнения (параметр `spark.executor.cores`), увеличив требования по доступной оперативной памяти узла исполнения (параметр `spark.executor.memory`), или используя комбинацию соответствующих настроек.
