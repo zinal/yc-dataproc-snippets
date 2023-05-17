@@ -17,11 +17,15 @@ YC_MS_URI='thrift://rc1c-dataproc-m-k4gpw2jv9xjkevlj.mdb.yandexcloud.net:9083'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
+# --services hdfs,yarn,tez,mapreduce,hive,spark,livy,zeppelin
+# --property hive:hive.metastore.uris=${YC_MS_URI}
+# --property hive:hive.exec.compress.output=true
+
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
   --version ${YC_VERSION} --ui-proxy \
-  --services hdfs,yarn,tez,mapreduce,hive,spark,livy,zeppelin \
+  --services hdfs,yarn,tez,mapreduce,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
@@ -32,11 +36,10 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:fs.s3a.committer.threads=100 \
   --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
-  --property hive:hive.metastore.uris=${YC_MS_URI} \
-  --property hive:hive.exec.compress.output=true \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
+  --property spark:spark.hadoop.hive.metastore.uris=${YC_MS_URI} \
   --property spark:spark.hadoop.fs.s3a.committer.name=directory \
   --property spark:spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol \
   --property spark:spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter \
@@ -45,5 +48,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
+  --property dataproc:hive.thrift.impl=spark \
   --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh' \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_geesefs.sh,args='${YC_BUCKET}
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_geesefs.sh,args='${YC_BUCKET} \
+  --async
