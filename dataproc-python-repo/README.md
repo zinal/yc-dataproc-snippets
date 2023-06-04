@@ -84,6 +84,8 @@ from catboost import CatBoostRegressor
 #...
 ```
 
+Если при использовании виртуального окружения Python в ноутбуке Zeppelin возникает ошибка вида `TypeError: required field "type_ignores" missing from Module`, то необходимо наложить патч на код Zeppelin, как указано ниже в разделе 4.
+
 ## 3. Обновление основного окружения Python в среде Data Proc
 
 Для выполнения синхронного и надёжного обновления основного окружения Python на всех узлах кластера Data Proc предлагается следующий подход:
