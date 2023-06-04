@@ -7,13 +7,14 @@
 #  * сервисный аккаунт с доступом к бакету,
 #  * кластер Data Proc с сервисом Hive Metastore
 
-YC_CLUSTER=normal-4
+YC_CLUSTER=normal-4a
 YC_VERSION=2.0
 YC_ZONE=ru-central1-c
 YC_SUBNET=default-ru-central1-c
 YC_BUCKET=dproc-wh
 YC_SA=dp1
-YC_MS_URI='thrift://rc1c-dataproc-m-k4gpw2jv9xjkevlj.mdb.yandexcloud.net:9083'
+#YC_MS_URI='thrift://10.128.0.8:9083'
+YC_MS_URI='thrift://rc1c-dataproc-m-yempltyygr9d8pjh.mdb.yandexcloud.net:9083'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
@@ -21,7 +22,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
   --version ${YC_VERSION} --ui-proxy \
-  --services hdfs,yarn,tez,mapreduce,hive,spark,livy,zeppelin,zookeeper,hbase \
+  --services hdfs,yarn,mapreduce,hive,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="data",role='datanode',resource-preset='s2.xlarge',disk-type='network-ssd-nonreplicated',disk-size=372,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
