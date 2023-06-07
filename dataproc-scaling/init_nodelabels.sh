@@ -6,12 +6,12 @@ set +u
 SUBCLUSTER_NAME="$1"
 
 # Download the JQ and YQ pre-built utilities.
-wget -qO -O - https://mycop1.website.yandexcloud.net/utils/jq.gz | gzip -dc >/tmp/jq
-wget -qO -O - https://mycop1.website.yandexcloud.net/utils/yq.gz | gzip -dc >/tmp/yq
-sudo mv /tmp/jq /usr/local/bin/
-sudo mv /tmp/yq /usr/local/bin/
-sudo chown root:bin /usr/local/bin/jq /usr/local/bin/yq
-sudo chmod 555 /usr/local/bin/jq /usr/local/bin/yq
+wget -q -O - https://mycop1.website.yandexcloud.net/utils/jq.gz | gzip -dc >/tmp/jq
+wget -q -O - https://mycop1.website.yandexcloud.net/utils/yq.gz | gzip -dc >/tmp/yq
+mv /tmp/jq /usr/local/bin/
+mv /tmp/yq /usr/local/bin/
+chown root:bin /usr/local/bin/jq /usr/local/bin/yq
+chmod 555 /usr/local/bin/jq /usr/local/bin/yq
 
 # Check if the label must be set.
 MUSTLABEL=N
