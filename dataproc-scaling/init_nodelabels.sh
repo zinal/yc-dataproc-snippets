@@ -5,16 +5,22 @@ set +u
 
 SUBCLUSTER_NAME="$1"
 
-sudo apt-get install -y jq
-sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-sudo chmod aoug+x /usr/local/bin/yq
+# Download the JQ and YQ pre-built utilities.
+wget -qO -O - https://mycop1.website.yandexcloud.net/utils/jq.gz | gzip -dc >/tmp/jq
+wget -qO -O - https://mycop1.website.yandexcloud.net/utils/yq.gz | gzip -dc >/tmp/yq
+sudo mv /tmp/jq /usr/local/bin/
+sudo mv /tmp/yq /usr/local/bin/
+sudo chown root:bin /usr/local/bin/jq /usr/local/bin/yq
+sudo chmod 555 /usr/local/bin/jq /usr/local/bin/yq
 
+# Check if the label must be set.
 MUSTLABEL=N
 if [ "${ROLE}" = "masternode" ]; then
   # On master init, we add the cluster node labels
-  sudo -u yarn yarn rmadmin -addToClusterNodeLabels 'sparkam'
+  sudo -u yarn yarn rmadmin -addToClusterNodeLabels 'SPARKAM'
 elif [ "${ROLE}" = "datanode" ]; then
-  # Datanodes are good for running Spark AM containers
+  # Datanodes are good for running Spark AM containers.
+  # Note that setting the label means that "regular" containers will not go to datanodes.
   MUSTLABEL=Y
 elif [ ! -z "$SUBCLUSTER_NAME" ]; then
   # Let's retrieve and check the subcluster name
@@ -28,8 +34,9 @@ elif [ ! -z "$SUBCLUSTER_NAME" ]; then
 fi
 
 if [ "${MUSTLABEL}" = "Y" ]; then
+  # Set the SPARKAM label on the current host
   MYHOST=`hostname -f`
-  sudo -u yarn yarn rmadmin -replaceLabelsOnNode "${MYHOST}=sparkam" -failOnUnknownNodes
+  sudo -u yarn yarn rmadmin -replaceLabelsOnNode "${MYHOST}=SPARKAM" -failOnUnknownNodes
 fi
 
 # End Of File
