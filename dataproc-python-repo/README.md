@@ -43,12 +43,19 @@ sudo -u hdfs hdfs dfs -copyFromLocal pyspark_venv.tar.gz s3a://dproc-wh/pyenv/py
 
 Интеграция Yandex DataSphere и Yandex Data Proc основана на использовании компонента [Apache Livy](https://livy.apache.org/) в составе Data Proc.
 
+Для использования виртуальных окружений Python необходимо использовать режим запуска заданий Spark (deploy mode) "cluster", который в варианте интеграции DataSphere через Apache Livy требуется активировать, установив свойство кластера `livy:livy.spark.deploy-mode` в значение `cluster`.
+
+> **Примечание.** При использовании режима "client", который включён по умолчанию в легковесных кластерах Data Proc, процесс-драйвер задания Spark запускается на мастер-узле, в результате чего он не получает доступа к файлам виртуального окружения, размещаемым на вычислительных узлах.
+
 Для использования в задании PySpark, выполняемого на кластере Data Proc и управляемого из DataSphere, подготовленного виртуального окружения Python, необходимо явно создать сессию Livy, передав в неё в качестве параметра путь к файлу образа виртуального окружения в бакете Object Storage.
 
 Пример команды создания сессии Livy с нужными настройками:
 
 ```sh
-%create_livy_session --cluster DPROC-CLUSTER --id LIVY-SESSION --conf spark.cores.max=4 --conf spark.executor.memory=8g --conf spark.yarn.dist.archives=s3a://BUCKETNAME/pyenv/pyspark_venv.tar.gz#environment --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=./environment/bin/python
+%create_livy_session --cluster DPROC-CLUSTER --id LIVY-SESSION \
+  --conf spark.cores.max=4 --conf spark.executor.memory=8g \
+  --conf spark.yarn.dist.archives=s3a://BUCKETNAME/pyenv/pyspark_venv.tar.gz#environment \
+  --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=./environment/bin/python
 ```
 
 В приведённой выше команде:

@@ -8,6 +8,7 @@
 * [Настройка S3A Committers для оптимизации записи в Yandex Object Storage](dataproc-s3a-committers/)
 * [Копирование дополнительных файлов на узлы Data Proc](dataproc-copy-files/)
 * [Настройка кластера Data Proc для работы с Apache Kafka](dataproc-kafka/)
+* [Использование автоскейлинга в заданиях Spark](dataproc-scaling/)
 * [Управление дополнительными компонентами Python](dataproc-python-repo/)
 * [Использование Delta Lake](dataproc-deltalake/)
 
