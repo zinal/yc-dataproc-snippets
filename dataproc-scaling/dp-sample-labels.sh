@@ -26,8 +26,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --services yarn,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="static",role='computenode',resource-preset='s3-c16-m64',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
-  --subcluster name="dynamic",role='computenode',resource-preset='s3-c16-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=8,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
+  --subcluster name="static",role='computenode',resource-preset='s3-c16-m64',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="dynamic",role='computenode',resource-preset='s3-c16-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=8,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=300 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property yarn:yarn.node-labels.fs-store.root-dir=file:///hadoop/yarn/node-labels \
   --property yarn:yarn.node-labels.enabled=true \
@@ -55,7 +55,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_nodelabels.sh,args=static' \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh' \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_geesefs.sh,args='${YC_BUCKET} \
+  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
   --async
