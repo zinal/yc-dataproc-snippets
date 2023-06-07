@@ -55,16 +55,32 @@ DROP TABLE megatab;
 CREATE TABLE megatab (
   num bigint not null,
   tv timestamp not null,
-  a varchar(20) not null,
-  b varchar(20) not null,
-  c varchar(20) not null,
-  d varchar(20) not null
+  a varchar(50) not null,
+  b varchar(50) not null,
+  c varchar(50) not null,
+  d varchar(50) not null
 ) PARTITIONED BY (tv_year INT, tv_month INT, tv_day INT)
   STORED AS parquet;
+
+CREATE TABLE megatab2 (
+  num bigint not null,
+  tv timestamp not null,
+  a varchar(50) not null,
+  b varchar(50) not null,
+  c varchar(50) not null,
+  d varchar(50) not null,
+  tv_year INT not null,
+  tv_month INT not null,
+  tv_day INT not null
+) USING delta PARTITIONED BY (tv_year);
   
 SELECT COUNT(*) FROM (SELECT DISTINCT d FROM demo1_uuid1g_v) x;
 
-INSERT INTO megatab
-SELECT /*+ REPARTITION(100,tv_year,tv_month,tv_day) */
+INSERT INTO megatab2
+SELECT /*+ REPARTITION(100,tv_year,tv_month) */
  num,COALESCE(tv,TIMESTAMP '1980-01-01 00:00:00') AS tv,a,b,c,d,tv_year,tv_month,tv_day
 FROM demo1_uuid1g_v;
+
+SELECT 100.0 * (MAX(anum)-MIN(anum)) / ((MAX(anum) + MIN(anum)) / 2.0) AS pct FROM (
+  SELECT SUBSTR(a,1,4) AS aa, AVG(num) AS anum FROM megatab2 WHERE tv_year BETWEEN 1995 AND 1997 GROUP BY SUBSTR(a,1,4)
+) qq;

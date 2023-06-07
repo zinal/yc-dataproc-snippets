@@ -17,7 +17,7 @@ chmod 555 /usr/local/bin/jq /usr/local/bin/yq
 MUSTLABEL=N
 if [ "${ROLE}" = "masternode" ]; then
   # On master init, we add the cluster node labels
-  sudo -u yarn yarn rmadmin -addToClusterNodeLabels 'SPARKAM'
+  sudo -u yarn yarn rmadmin -addToClusterNodeLabels 'SPARKAM' || true
 elif [ "${ROLE}" = "datanode" ]; then
   # Datanodes are good for running Spark AM containers.
   # Note that setting the label means that "regular" containers will not go to datanodes.
@@ -36,6 +36,16 @@ fi
 if [ "${MUSTLABEL}" = "Y" ]; then
   # Set the SPARKAM label on the current host
   MYHOST=`hostname -f`
+  while true; do
+    # Check that the label is already defined
+    foundya=`sudo -u yarn yarn cluster --list-node-labels 2>/dev/null | grep -E '^Node Labels' | grep '<SPARKAM:' | wc -l | (read x && echo $x)`
+    if [ $foundya -gt 0 ]; then
+      break
+    fi
+    # Add the label if missing
+    sudo -u yarn yarn rmadmin -addToClusterNodeLabels 'SPARKAM' || true
+    sleep 1
+  done
   sudo -u yarn yarn rmadmin -replaceLabelsOnNode "${MYHOST}=SPARKAM" -failOnUnknownNodes
 fi
 

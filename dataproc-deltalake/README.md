@@ -266,7 +266,7 @@ CREATE TABLE deltatab1 (
   tv_year INT not null,
   tv_month INT not null,
   tv_day INT not null
-) USING DELTA PARTITIONED BY (tv_year, tv_month);
+) USING DELTA PARTITIONED BY (tv_year);
 
 -- Оператор вставки
 INSERT INTO deltatab1
