@@ -81,6 +81,6 @@ SELECT /*+ REPARTITION(100,tv_year,tv_month) */
  num,COALESCE(tv,TIMESTAMP '1980-01-01 00:00:00') AS tv,a,b,c,d,tv_year,tv_month,tv_day
 FROM demo1_uuid1g_v;
 
-SELECT 100.0 * (MAX(anum)-MIN(anum)) / ((MAX(anum) + MIN(anum)) / 2.0) AS pct FROM (
-  SELECT SUBSTR(a,1,4) AS aa, AVG(num) AS anum FROM megatab2 WHERE tv_year BETWEEN 1995 AND 1997 GROUP BY SUBSTR(a,1,4)
+SELECT MAX(anum)-MIN(anum) AS rng FROM (
+  SELECT SUBSTR(a,1,4) AS aa, AVG(num) AS anum FROM megatab2 WHERE tv_year BETWEEN 1995 AND 2010 GROUP BY SUBSTR(a,1,4)
 ) qq;
