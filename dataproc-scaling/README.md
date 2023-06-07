@@ -17,8 +17,8 @@
 Типовой набор параметров кластера Data Proc с автоскейлингом выглядит следующим образом:
 
 | Компонент | Параметр | Типовое значение | Пояснение |
-| --------- | -------- | ---------------- | --------- |
-| `spark` | ``spark.yarn.am.nodeLabelExpression` | `SPARKAM` | Имя метки для отбора узлов для запуска AM-контейнеров заданий Spark |
+| --------- | -------- | ---------------- | -------------------------- |
+| `spark` | `spark.yarn.am.nodeLabelExpression` | `SPARKAM` | Имя метки для отбора узлов для запуска AM-контейнеров заданий Spark |
 | `yarn` | `yarn.node-labels.enabled` | `true` | Включить поддержку меток узлов в YARN |
 | `yarn` | `yarn.node-labels.fs-store.root-dir` | `file:///hadoop/yarn/node-labels` | Каталог для хранения меток узлов в файловой системе мастер-узла кластера |
 | `yarn` | `yarn.node-labels.configuration-type` | `centralized` | Режим управления метками, обычно `centralized` |
@@ -37,4 +37,5 @@
 Дополнительная информация:
 * [документация Apache Hadoop по работе с метками узлов YARN](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/NodeLabel.html);
 * [документация Apache Hadoop по настройке YARN Capacity Scheduler](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/CapacityScheduler.html);
-* [документация Hortonworks по настройке меток узлов YARN](https://docs.cloudera.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html).
+* [документация Hortonworks по настройке меток узлов YARN](https://docs.cloudera.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html);
+* [документация Apache Spark по выполнению на кластерах YARN](https://spark.apache.org/docs/3.0.3/running-on-yarn.html).
