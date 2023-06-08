@@ -46,7 +46,7 @@ if [ "${MUSTLABEL}" = "Y" ]; then
     sudo -u yarn yarn rmadmin -addToClusterNodeLabels 'SPARKAM' || true
     sleep 1
   done
-  sudo -u yarn yarn rmadmin -replaceLabelsOnNode "${MYHOST}=SPARKAM" -failOnUnknownNodes
+  sudo -u yarn yarn rmadmin -replaceLabelsOnNode "${MYHOST}=SPARKAM"
 fi
 
 # End Of File
