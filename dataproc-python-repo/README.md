@@ -75,19 +75,26 @@ from catboost import CatBoostRegressor
 
 ### 2.3. Использование виртуального окружения в среде интерпретатора Zeppelin
 
+При использовании виртуальных окружений Python наиболее логичным режимом работы контекста Spark выглядит "Per Note / Isolated", поскольку в этом режиме разные блокноты могут задействовать разные виртуальные окружения Python. Пример настроек в UI Zeppelin см. на рисунке ниже.
+
+![Zeppelin Spark Interpreter Settings](./images/zeppelin-01.png)
+
 Настройка переменных сессии Spark в интерпретаторе Zeppelin выполняется с помощью ячейки в режиме `%spark.conf`, которая должна быть выполнена до запуска других операций Spark:
 
 ```spark.conf
 %spark.conf
+spark.submit.deployMode cluster
 spark.yarn.dist.archives s3a://BUCKETNAME/pyenv/pyspark_venv.tar.gz#environment
 spark.yarn.appMasterEnv.PYSPARK_PYTHON ./environment/bin/python
+spark.pyspark.python ./environment/bin/python
 ```
 
 При выполнении следующей ячейки, использующей Spark (например, ячейки в режимах `%spark` или `%spark.sql`) будет выполнено создание сессии Spark с указанными настройками. В этой сессии можно использовать зависимости, включённые в состав виртуального окружения:
 
 ```python
 %spark.pyspark
-from catboost import CatBoostRegressor
+import catboost
+print(catboost.__version__)
 #...
 ```
 
