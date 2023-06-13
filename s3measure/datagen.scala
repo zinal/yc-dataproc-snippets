@@ -31,7 +31,6 @@ val df3 = df2.
   withColumn("str_4",col("str_1"))
 
 df3.write.
-  option("mapreduce.fileoutputcommitter.algorithm.version", "2").
   option("compression", "gzip").
   mode("overwrite").
   //csv(SYNTHETICS_OUTPUT_PATH)

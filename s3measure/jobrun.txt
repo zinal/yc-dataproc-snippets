@@ -1,13 +1,14 @@
-spark-shell \
---name test_exchange_h1_test \
+
+time spark-shell \
+--name s3measure \
 --master yarn \
 --deploy-mode client \
 --conf "spark.yarn.am.memory=2g" \
---conf "spark.executor.memory=12g" \
---conf "spark.executor.instances=8" \
+--conf "spark.executor.memory=16g" \
+--conf "spark.executor.instances=16" \
 --conf "spark.executor.cores=4" \
 --conf "spark.driver.cores=1" \
---conf "spark.driver.memory=6g" \
+--conf "spark.driver.memory=8g" \
 --conf "spark.dynamicAllocation.enabled=false" \
 --conf "spark.hadoop.fs.s3a.committer.name=magic" \
 --conf "spark.hadoop.fs.s3a.committer.magic.enabled=true" \
@@ -15,6 +16,7 @@ spark-shell \
 --conf "spark.hadoop.fs.s3a.committer.abort.pending.uploads=false" \
 --conf "spark.sql.parquet.mergeSchema=false" \
 --conf "spark.sql.parquet.filterPushdown=true" \
+--conf "spark.hadoop.parquet.enable.summary-metadata=false" \
 --conf "spark.hadoop.fs.s3a.committer.threads=100" \
 --conf "spark.hadoop.fs.s3a.connection.maximum=200" \
 --conf "spark.hadoop.fs.s3a.connection.timeout=20000" \
@@ -24,4 +26,5 @@ spark-shell \
 --conf "spark.hadoop.fs.s3a.threads.max=100" \
 --conf "spark.hadoop.fs.s3a.multipart.size=2147483647" \
 --conf "spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol" \
---conf "spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter" 
+--conf "spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter" \
+-i testspeed.scala
