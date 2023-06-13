@@ -1,0 +1,34 @@
+
+time spark-shell \
+--name s3measure \
+--master yarn \
+--deploy-mode client \
+--conf "spark.yarn.am.memory=2g" \
+--conf "spark.executor.memory=16g" \
+--conf "spark.executor.instances=16" \
+--conf "spark.executor.cores=4" \
+--conf "spark.driver.cores=1" \
+--conf "spark.driver.memory=8g" \
+--conf "spark.dynamicAllocation.enabled=false" \
+--conf "spark.hadoop.fs.s3a.committer.name=magic" \
+--conf "spark.hadoop.fs.s3a.committer.magic.enabled=true" \
+--conf "spark.hadoop.parquet.summary.metadata.level=none" \
+--conf "spark.hadoop.fs.s3a.committer.abort.pending.uploads=false" \
+--conf "spark.sql.parquet.mergeSchema=false" \
+--conf "spark.sql.parquet.filterPushdown=true" \
+--conf "spark.hadoop.parquet.enable.summary-metadata=false" \
+--conf "spark.hadoop.fs.s3a.committer.threads=100" \
+--conf "spark.hadoop.fs.s3a.connection.maximum=200" \
+--conf "spark.hadoop.fs.s3a.connection.timeout=20000" \
+--conf "spark.hadoop.fs.s3a.fast.upload.active.blocks=20" \
+--conf "spark.hadoop.fs.s3a.fast.upload.buffer=bytebuffer" \
+--conf "spark.hadoop.fs.s3a.max.total.tasks=100" \
+--conf "spark.hadoop.fs.s3a.threads.max=100" \
+--conf "spark.hadoop.fs.s3a.multipart.size=2147483647" \
+--conf "spark.sql.sources.commitProtocolClass=org.apache.spark.internal.io.cloud.PathOutputCommitProtocol" \
+--conf "spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter" \
+--conf "spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider" \
+--conf "spark.hadoop.fs.s3a.endpoint=storage.yandexcloud.net" \
+--conf "spark.hadoop.fs.s3a.access.key=YCAJEax8cdVI1fz_4xMAyaPGr" \
+--conf "spark.hadoop.fs.s3a.secret.key=YCMbGU2a7Qfm929_0csAdoUwp4UZ3nyaIsatgcwM" \
+-i datagen.scala
