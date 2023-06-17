@@ -1,6 +1,8 @@
 import org.apache.spark.sql.types._
 
-val SYNTHETICS_OUTPUT_PATH = "s3a://dproc-wh/s3measure/INPUT/input_wide/"
+sc.setLogLevel("INFO")
+
+val SYNTHETICS_OUTPUT_PATH = "s3a://dproc-zeppelin/s3measure/INPUT/input_wide/"
 val numPart = 200
 val rowsPerPart = 1000000 // 100Mb each file, 20G total
 

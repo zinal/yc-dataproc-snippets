@@ -1,6 +1,6 @@
 
 time spark-shell \
---name s3measure \
+--name s3measure-dataget \
 --master yarn \
 --deploy-mode client \
 --conf "spark.yarn.am.memory=2g" \
@@ -29,6 +29,8 @@ time spark-shell \
 --conf "spark.sql.parquet.output.committer.class=org.apache.spark.internal.io.cloud.BindingParquetOutputCommitter" \
 --conf "spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider" \
 --conf "spark.hadoop.fs.s3a.endpoint=storage.yandexcloud.net" \
+--conf "spark.hadoop.fs.s3a.signing-algorithm=" \
+--conf "spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider" \
 --conf "spark.hadoop.fs.s3a.access.key=YCAJEax8cdVI1fz_4xMAyaPGr" \
 --conf "spark.hadoop.fs.s3a.secret.key=YCMbGU2a7Qfm929_0csAdoUwp4UZ3nyaIsatgcwM" \
 -i datagen.scala
