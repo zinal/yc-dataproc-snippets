@@ -31,6 +31,6 @@ time spark-shell \
 --conf "spark.hadoop.fs.s3a.endpoint=storage.yandexcloud.net" \
 --conf "spark.hadoop.fs.s3a.signing-algorithm=" \
 --conf "spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider" \
---conf "spark.hadoop.fs.s3a.access.key=YCAJEax8cdVI1fz_4xMAyaPGr" \
---conf "spark.hadoop.fs.s3a.secret.key=YCMbGU2a7Qfm929_0csAdoUwp4UZ3nyaIsatgcwM" \
+--conf "spark.hadoop.fs.s3a.access.key=ACCESS_KEY" \
+--conf "spark.hadoop.fs.s3a.secret.key=SACRED_KEY" \
 -i datagen.scala
