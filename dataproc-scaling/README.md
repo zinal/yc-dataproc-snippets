@@ -28,7 +28,7 @@
 | `yarn` | `yarn.node-labels.enabled` | `true` | Включить поддержку меток узлов в YARN |
 | `yarn` | `yarn.node-labels.fs-store.root-dir` | `file:///hadoop/yarn/node-labels` | Каталог для хранения меток узлов в файловой системе мастер-узла кластера |
 | `yarn` | `yarn.node-labels.configuration-type` | `centralized` | Режим управления метками, обычно `centralized` |
-| `capacity-scheduler` | `yarn.scheduler.capacity.maximum-am-resource-percent` | `1.00` | Максимальная доля ресурсов (от 0.0 до 0.1) на выполнение контейнеров AM |
+| `capacity-scheduler` | `yarn.scheduler.capacity.maximum-am-resource-percent` | `1.00` | Максимальная доля ресурсов (от 0.0 до 1.0) на выполнение контейнеров AM |
 | `capacity-scheduler`  | `yarn.scheduler.capacity.root.default.accessible-node-labels` | `SPARKAM` | Разрешить заданиям в очереди `default` использовать узлы с меткой `SPARKAM` |
 | `capacity-scheduler`  | `yarn.scheduler.capacity.root.accessible-node-labels.SPARKAM.capacity` | `100` | Установить допустимую долю использования узлов с меткой `SPARKAM` в 100% |
 | `capacity-scheduler`  | `yarn.scheduler.capacity.root.default.accessible-node-labels.SPARKAM.capacity` | `100` | Установить допустимую долю использования заданиями очереди `default` узлов с меткой `SPARKAM` в 100% |
