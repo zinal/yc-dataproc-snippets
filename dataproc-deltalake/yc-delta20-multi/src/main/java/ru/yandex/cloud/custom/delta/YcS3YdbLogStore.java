@@ -1,5 +1,6 @@
 package ru.yandex.cloud.custom.delta;
 
+import ru.yandex.cloud.custom.ddb.YcLockboxAwsCredentials;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Arrays;

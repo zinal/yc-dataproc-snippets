@@ -17,10 +17,10 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.yandex.cloud</groupId>
-  <artifactId>yc-delta-multi-dp21</artifactId>
+  <artifactId>yc-delta20-multi-dp21</artifactId>
   <!-- Update YcS3YdbLogStore.VERSION! -->
-  <version>1.1-SNAPSHOT</version>
-  <name>Yandex Data Proc DeltaLake support</name>
+  <version>1.0</version>
+  <name>Yandex Data Proc DeltaLake 2.0 support</name>
   <packaging>jar</packaging>
 
   <properties>

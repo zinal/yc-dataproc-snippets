@@ -15,7 +15,7 @@
           <unpack>true</unpack>
           <scope>runtime</scope>
           <includes>
-              <include>com.yandex.cloud:yc-delta-multi-dp21</include>
+              <include>com.yandex.cloud:yc-delta20-multi-dp21</include>
 <!-- Replaced with direct HTTPS call
               <include>com.yandex.cloud:java-sdk-services</include>
               <include>com.yandex.cloud:java-genproto</include>
