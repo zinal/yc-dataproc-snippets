@@ -25,7 +25,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --version ${YC_VERSION} --ui-proxy \
   --services yarn,tez,hive \
   --bucket ${YC_BUCKET} \
-  --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-hdd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="master",role='masternode',resource-preset='s2.small',disk-type='network-hdd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="compute",role='computenode',resource-preset='s2.medium',disk-type='network-hdd',disk-size=100,hosts-count=0,max-hosts-count=1,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property core:fs.s3a.committer.name=directory \
@@ -41,3 +41,6 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property hive:hive.exec.compress.output=true \
   --property hive:hive.metastore.fshandler.threads=100 \
   --property hive:datanucleus.connectionPool.maxPoolSize=100
+  --async
+
+# End Of File

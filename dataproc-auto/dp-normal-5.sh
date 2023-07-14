@@ -9,7 +9,7 @@
 
 # https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/NodeLabel.html
 
-YC_CLUSTER=sample-labels
+YC_CLUSTER=normal-5
 YC_VERSION=2.1
 YC_ZONE=ru-central1-c
 YC_SUBNET=default-ru-central1-c
