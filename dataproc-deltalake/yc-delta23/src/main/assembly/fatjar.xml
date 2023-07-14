@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0
+                http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+  <id>fatjar</id>
+  <formats>
+      <format>jar</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <dependencySets>
+      <dependencySet>
+          <outputDirectory>/</outputDirectory>
+          <useProjectArtifact>true</useProjectArtifact>
+          <unpack>true</unpack>
+          <scope>runtime</scope>
+          <includes>
+              <include>com.yandex.cloud:yc-ddb</include>
+              <include>com.yandex.cloud:yc-delta20-multi-dp21</include>
+<!-- Replaced with direct HTTPS call
+              <include>com.yandex.cloud:java-sdk-services</include>
+              <include>com.yandex.cloud:java-genproto</include>
+              <include>com.yandex.cloud:java-sdk-auth</include>
+              <include>io.grpc:grpc-api</include>
+              <include>io.grpc:grpc-core</include>
+              <include>io.grpc:grpc-context</include>
+              <include>io.grpc:grpc-stub</include>
+              <include>io.grpc:grpc-protobuf</include>
+              <include>io.grpc:grpc-protobuf-lite</include>
+              <include>io.grpc:grpc-services</include>
+              <include>io.grpc:grpc-netty-shaded</include>
+              <include>com.google.guava:guava</include>
+              <include>com.google.protobuf:protobuf-java</include>
+              <include>io.perfmark:perfmark-api</include>
+-->
+              <include>io.delta:delta-core_2.12</include>
+              <include>io.delta:delta-storage</include>
+              <include>io.delta:delta-storage-s3-dynamodb</include>
+          </includes>
+      </dependencySet>
+  </dependencySets>
+</assembly>
