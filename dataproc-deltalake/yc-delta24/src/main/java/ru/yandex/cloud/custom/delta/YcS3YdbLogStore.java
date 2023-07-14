@@ -35,6 +35,7 @@ import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import io.delta.storage.BaseExternalLogStore;
 import io.delta.storage.CloseableIterator;
 import io.delta.storage.ExternalCommitEntry;
+import io.delta.storage.RetryableCloseableIterator;
 
 import ru.yandex.cloud.custom.ddb.YcLockboxAwsCredentials;
 

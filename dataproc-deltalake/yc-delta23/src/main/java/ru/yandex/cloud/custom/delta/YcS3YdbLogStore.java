@@ -33,6 +33,7 @@ import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 
 import io.delta.storage.BaseExternalLogStore;
+import io.delta.storage.CloseableIterator;
 import io.delta.storage.ExternalCommitEntry;
 
 import ru.yandex.cloud.custom.ddb.YcLockboxAwsCredentials;
@@ -44,17 +45,18 @@ import org.slf4j.LoggerFactory;
  * A customized implementation of {@link S3DynamoDBLogStore} that works with
  * YDB as a DynamoDB substitute in Yandex Cloud.
  *
- * Initially copied from Delta Lake 2.3.0, original code reference:
- * https://github.com/delta-io/delta/blob/v2.3.0/storage-s3-dynamodb/src/main/java/io/delta/storage/S3DynamoDBLogStore.java
+ * Initially copied from Delta Lake 2.0.2, original code reference:
+ * https://github.com/delta-io/delta/blob/v2.0.2/storage-s3-dynamodb/src/main/java/io/delta/storage/S3DynamoDBLogStore.java
  *
  * Adopted for YDB by Maksim Zinal.
  */
 public class YcS3YdbLogStore extends BaseExternalLogStore {
+
     private static final Logger LOG = LoggerFactory.getLogger(YcS3YdbLogStore.class);
 
     // YcS3YdbLogStore Delta20 1.0 2023.07.14
     // YcS3YdbLogStore Delta20 1.1 SNAPSHOT
-    public static final String VERSION = "YcS3YdbLogStore Delta23 1.0 2023.07.14";
+    public static final String VERSION = "YcS3YdbLogStore Delta20 1.0 2023.07.14";
 
     /**
      * Configuration keys for the DynamoDB client.
@@ -65,13 +67,11 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
      */
     public static final String SPARK_CONF_PREFIX = "spark.io.delta.storage.S3DynamoDBLogStore";
     public static final String BASE_CONF_PREFIX = "io.delta.storage.S3DynamoDBLogStore";
+    public static final String READ_RETRIES = "read.retries";
     public static final String DDB_ENDPOINT = "ddb.endpoint";
     public static final String DDB_LOCKBOX = "ddb.lockbox";
     public static final String DDB_CLIENT_TABLE = "ddb.tableName";
     public static final String DDB_CLIENT_REGION = "ddb.region";
-    public static final String DDB_CLIENT_CREDENTIALS_PROVIDER = "credentials.provider";
-    public static final String DDB_CREATE_TABLE_RCU = "provisionedThroughput.rcu";
-    public static final String DDB_CREATE_TABLE_WCU = "provisionedThroughput.wcu";
 
     // WARNING: setting this value too low can cause data loss. Defaults to a duration of 1 day.
     public static final String TTL_SECONDS = "ddb.ttl";
@@ -124,6 +124,24 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
     }
 
     @Override
+    public CloseableIterator<String> read(Path path, Configuration hadoopConf) throws IOException {
+        // With many concurrent readers/writers, there's a chance that concurrent 'recovery'
+        // operations occur on the same file, i.e. the same temp file T(N) is copied into the target
+        // N.json file more than once. Though data loss will *NOT* occur, readers of N.json may
+        // receive a RemoteFileChangedException from S3 as the ETag of N.json was changed. This is
+        // safe to retry, so we do so here.
+        final int maxRetries = Integer.parseInt(
+            getParam(
+                hadoopConf,
+                READ_RETRIES,
+                Integer.toString(RetryableCloseableIterator.DEFAULT_MAX_RETRIES)
+            )
+        );
+
+        return new RetryableCloseableIterator(() -> super.read(path, hadoopConf), maxRetries);
+    }
+
+    @Override
     protected long getExpirationDelaySeconds() {
         return expirationDelaySeconds;
     }
@@ -133,7 +151,9 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
             ExternalCommitEntry entry,
             boolean overwrite) throws IOException {
         try {
-            LOG.debug(String.format("putItem %s, overwrite: %s", entry, overwrite));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(String.format("putItem %s, overwrite: %s", entry, overwrite));
+            }
             client.putItem(createPutItemRequest(entry, overwrite));
         } catch (ConditionalCheckFailedException e) {
             LOG.debug(e.toString());
@@ -236,8 +256,8 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
                 TableDescription descr = result.getTable();
                 status = descr.getTableStatus();
             } catch (ResourceNotFoundException e) {
-                final long rcu = Long.parseLong(getParam(hadoopConf, DDB_CREATE_TABLE_RCU, "5"));
-                final long wcu = Long.parseLong(getParam(hadoopConf, DDB_CREATE_TABLE_WCU, "5"));
+                final long rcu = 5; // no need to customize for YDB
+                final long wcu = 5;
 
                 LOG.info(
                     "DynamoDB table `{}` in region `{}` does not exist. " +
@@ -282,10 +302,10 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
                 LOG.error("table `{}` status: {}", tableName, status);
                 break;  // TODO - raise exception?
             }
-        };
+        }
     }
 
-    private AmazonDynamoDB getClient() throws java.io.IOException {
+    private AmazonDynamoDB getClient() {
         // Yandex Cloud and YDB specific configuration.
         return AmazonDynamoDBClientBuilder.standard()
                 .disableEndpointDiscovery()
@@ -326,4 +346,5 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
         if (basePrefixVal != null) return basePrefixVal;
         return defaultValue;
     }
+
 }
