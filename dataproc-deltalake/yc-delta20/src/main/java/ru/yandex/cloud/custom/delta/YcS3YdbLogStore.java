@@ -41,7 +41,7 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
 
     // 1.0-2023.02.26
     // 1.1-SNAPSHOT
-    public static final String VERSION = "YcS3YdbLogStore 1.1-SNAPSHOT";
+    public static final String VERSION = "YcS3YdbLogStore 1.0-2023.07.14";
 
     /**
      * Configuration keys for the DynamoDB client.

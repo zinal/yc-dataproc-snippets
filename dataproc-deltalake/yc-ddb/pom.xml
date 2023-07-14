@@ -17,10 +17,9 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.yandex.cloud</groupId>
-  <artifactId>yc-delta20-multi-dp21</artifactId>
-  <!-- Update YcS3YdbLogStore.VERSION! -->
+  <artifactId>yc-ddb</artifactId>
   <version>1.0</version>
-  <name>Yandex Data Proc DeltaLake 2.0 support</name>
+  <name>Yandex Data Proc DynamoDB Helpers</name>
   <packaging>jar</packaging>
 
   <properties>
@@ -63,52 +62,9 @@
       </exclusions>
     </dependency>
     <dependency>
-        <groupId>io.delta</groupId>
-        <artifactId>delta-storage-s3-dynamodb</artifactId>
-        <version>2.0.2</version>
-    </dependency>
-    <dependency>
-        <groupId>io.delta</groupId>
-        <artifactId>delta-core_2.12</artifactId>
-        <version>2.0.2</version>
-    </dependency>
-<!-- Replaced with direct HTTPS call
-    <dependency>
-        <groupId>com.yandex.cloud</groupId>
-        <artifactId>java-sdk-services</artifactId>
-        <version>2.5.3</version>
-    </dependency>
--->
-    <dependency>
         <groupId>com.tdunning</groupId>
         <artifactId>json</artifactId>
         <version>1.8</version>
     </dependency>
   </dependencies>
-  <build>
-      <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.4.2</version>
-            <configuration>
-                <descriptors>
-                    <descriptor>src/main/assembly/fatjar.xml</descriptor>
-                </descriptors>
-                <archiverConfig>
-                     <compress>true</compress>
-                </archiverConfig>
-            </configuration>
-            <executions>
-                <execution>
-                    <id>assemble-all</id>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>single</goal>
-                    </goals>
-                </execution>
-            </executions>
-          </plugin>
-      </plugins>
-  </build>
 </project>
