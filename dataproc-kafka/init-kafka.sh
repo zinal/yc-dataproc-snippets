@@ -18,7 +18,7 @@ if [ -z "$JARLIB" ]; then
   chown -R hdfs:hdfs /tmp/depjars
   if [ -f ${DESTDIR1}/spark-sql-kafka-0-10_2.12-3.0.3.jar ]; then
     # Data Proc 2.0
-    sudo -u hdfs hdfs dfs -copyToLocal "s3a://$BUCKET/dp20/depjars/" /tmp/
+    sudo -u hdfs hdfs dfs -copyToLocal "s3a://$BUCKET/jars/dp-2.0.x/depjars/" /tmp/
 
     (cd ${DESTDIR1} && \
       mv /tmp/depjars/commons-pool2-2.6.2.jar . && \
@@ -31,8 +31,8 @@ if [ -z "$JARLIB" ]; then
       ln -s ${DESTDIR1}/kafka-clients-2.4.1.jar .)
 
   elif [ -f ${DESTDIR1}/spark-sql-kafka-0-10_2.12-3.2.1.jar ]; then
-    # Data Proc 2.1
-    sudo -u hdfs hdfs dfs -copyToLocal "s3a://$BUCKET/dp21/depjars/" /tmp/
+    # Data Proc 2.1.0-2.1.3
+    sudo -u hdfs hdfs dfs -copyToLocal "s3a://$BUCKET/jars/dp-2.1.3/depjars/" /tmp/
 
     (cd ${DESTDIR1} && \
       mv /tmp/depjars/commons-pool2-2.6.2.jar . && \
@@ -49,6 +49,26 @@ if [ -z "$JARLIB" ]; then
     (cd ${DESTDIR3} && \
       mv kafka-clients-2.8.1.jar kafka-clients-2.8.1.jar-bak && \
       ln -s ${DESTDIR1}/kafka-clients-2.8.2.jar .)
+
+  elif [ -f ${DESTDIR1}/spark-sql-kafka-0-10_2.12-3.3.2.jar ]; then
+    # Data Proc 2.1.4+
+    sudo -u hdfs hdfs dfs -copyToLocal "s3a://$BUCKET/jars/dp-2.1.6/depjars/" /tmp/
+
+    (cd ${DESTDIR1} && \
+      mv /tmp/depjars/commons-pool2-2.11.1.jar . && \
+      mv /tmp/depjars/kafka-clients-3.5.0.jar . && \
+      chown root:root kafka-clients-3.5.0.jar commons-pool2-2.11.1.jar && \
+      chmod 644 kafka-clients-3.5.0.jar commons-pool2-2.11.1.jar)
+
+    (cd ${DESTDIR2} && \
+      ln -s ${DESTDIR1}/commons-pool2-2.11.1.jar . && \
+      ln -s ${DESTDIR1}/kafka-clients-3.5.0.jar . && \
+      ln -s ${DESTDIR1}/spark-sql-kafka-0-10_2.12-3.3.2.jar . && \
+      ln -s ${DESTDIR1}/spark-token-provider-kafka-0-10_2.12-3.3.2.jar .)
+
+    (cd ${DESTDIR3} && \
+      mv kafka-clients-2.8.1.jar kafka-clients-2.8.1.jar-bak && \
+      ln -s ${DESTDIR1}/kafka-clients-3.5.0.jar .)
 
   fi
 fi
