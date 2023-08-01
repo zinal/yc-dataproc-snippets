@@ -178,7 +178,7 @@ spark-sql>
 
     ```bash
     $ spark-sql --executor-memory 20g --executor-cores 4 \
-      --jars /s3data/jars/yc-delta-multi-dp21-1.0-fatjar.jar \
+      --jars yc-delta23-multi-dp21-1.1-fatjar.jar \
       --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
       --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.YcDeltaCatalog \
       --conf spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
