@@ -84,10 +84,12 @@ spark-sql>
 ## 3. Расширенные возможности Delta Lake для бета-образов Data Proc 2.1
 
 Бета-образы Data Proc версии 2.1 комплектуются компонентами Apache Spark версии 3.2.1 (образы до версии 2.1.3 включительно) и 3.3.2 (образы версии 2.1.4 и более поздние). Чтобы получить доступ к бета-версиям образов Data Proc версии 2.1, запросите его через службу технической поддержки Yandex Cloud. Применительно к Delta Lake:
+
 * Spark 3.2.1 (Data Proc 2.1.0-2.1.3) совместим с Delta Lake [версии 2.0.2](https://github.com/delta-io/delta/releases/tag/v2.0.2);
 * Spark 3.3.2 (Data Proc 2.1.4+) совместим с Delta Lake [версии 2.3.0](https://github.com/delta-io/delta/releases/tag/v2.3.0).
 
 Основными преимуществами Delta Lake 2.x, по сравнению с версией 0.8.0, является:
+
 * поддержка [мультикластерного режима](https://docs.delta.io/2.0.2/delta-storage.html#multi-cluster-setup), обеспечивающего автоматическую координацию изменений данных в одной таблице из разных заданий Spark и кластеров Data Proc;
 * функция [идемпотентных операций модификации данных](https://docs.delta.io/latest/delta-streaming.html#idempotent-table-writes-in-foreachbatch), позволяющая решить задачу однократного применения изменений при потоковой обработке данных;
 * [функция Change Data Feed](https://docs.delta.io/2.0.2/delta-change-data-feed.html) для таблиц Delta Lake, обеспечивающая отслеживание изменений в данных;
@@ -158,19 +160,19 @@ spark-sql>
     yc resource-manager folder add-access-binding --id ${cur_folder} --service-account-name dp1 --role lockbox.payloadViewer
     ```
 
-7. Необходимые библиотеки Delta Lake 2.x, а также классы-надстройки для подключения к YDB доступны в виде собранных архивов для [DeltaLake 2.0.2](bin/yc-delta20-multi-dp21-1.0-fatjar.jar) и [для DeltaLake 2.3.0](bin/yc-delta23-multi-dp21-1.0-fatjar.jar). Исходный код надстройки доступен в подкаталогах [yc-delta20](yc-delta20/) и [yc-delta23](yc-delta23/). Собранный архив необходимо разместить в бакете Yandex Object Storage. Права доступа к бакету должны обеспечивать возможность чтения файла архива сервисными учётными записями кластеров Data Proc.
+7. Необходимые библиотеки Delta Lake 2.x, а также классы-надстройки для подключения к YDB доступны в виде собранных архивов для [DeltaLake 2.0.2](bin/yc-delta20-multi-dp21-1.1-fatjar.jar) и [для DeltaLake 2.3.0](bin/yc-delta23-multi-dp21-1.1-fatjar.jar). Исходный код надстройки доступен в подкаталогах [yc-delta20](yc-delta20/) и [yc-delta23](yc-delta23/). Собранный архив необходимо разместить в бакете Yandex Object Storage. Права доступа к бакету должны обеспечивать возможность чтения файла архива сервисными учётными записями кластеров Data Proc.
 
 8. Установите необходимые настройки для функционирования Delta Lake, на уровне отдельного задания либо на уровне кластера Data Proc:
     * зависимость от архива из пункта 7 выше, через свойство `spark.jars`, либо через сочетание свойств `spark.executor.extraClassPath` и `spark.driver.extraClassPath`;
     * `spark.sql.extensions` в значение `io.delta.sql.DeltaSparkSessionExtension`;
-    * `spark.sql.catalog.spark_catalog` в значение `org.apache.spark.sql.delta.catalog.DeltaCatalog`;
+    * `spark.sql.catalog.spark_catalog` в значение `org.apache.spark.sql.delta.catalog.YcDeltaCatalog`;
     * `spark.delta.logStore.s3a.impl` в значение `ru.yandex.cloud.custom.delta.YcS3YdbLogStore`;
     * `spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint` в значение точки подключения к Document API YDB для созданной на шаге (1) базы данных (значение поля `document_api_endpoint` из файла `info-delta1.json`);
     * `spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox` в значение идентификатора элемента Lockbox, полученного на шаге (5).
 
 9. Проверьте работоспособность Delta Lake, создав тестовую таблицу аналогично показанному ниже примеру:
 
-    ```
+    ```bash
     $ spark-sql --executor-memory 20g --executor-cores 4 \
       --jars /s3data/jars/yc-delta-multi-dp21-1.0-fatjar.jar \
       --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \

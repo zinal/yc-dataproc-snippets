@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * YDB as a DynamoDB substitute in Yandex Cloud.
  *
  * Initially copied from Delta Lake 2.0.2, original code reference:
- * https://github.com/delta-io/delta/blob/v2.0.2/storage-s3-dynamodb/src/main/java/io/delta/storage/S3DynamoDBLogStore.java
+ * https://github.com/delta-io/delta/blob/v2.3.0/storage-s3-dynamodb/src/main/java/io/delta/storage/S3DynamoDBLogStore.java
  *
  * Adopted for YDB by Maksim Zinal.
  */
@@ -56,7 +56,7 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
 
     // YcS3YdbLogStore Delta20 1.0 2023.07.14
     // YcS3YdbLogStore Delta20 1.1 SNAPSHOT
-    public static final String VERSION = "YcS3YdbLogStore Delta20 1.0 2023.07.14";
+    public static final String VERSION = "YcS3YdbLogStore Delta23 1.1 2023.08.01";
 
     /**
      * Configuration keys for the DynamoDB client.
@@ -123,6 +123,32 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
         tryEnsureTableExists(hadoopConf);
     }
 
+    /**
+     * Dropping all the metadata which were created for the specified table path.
+     * @param tablePath Table path to clean up.
+     */
+    public void removeMetadata(String tablePath) {
+        final Map<String, Condition> conditions = new ConcurrentHashMap<>();
+        conditions.put(
+            ATTR_TABLE_PATH,
+            new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue(tablePath))
+        );
+
+        final List<Map<String,AttributeValue>> items = client.query(
+            new QueryRequest(tableName)
+                .withConsistentRead(true)
+                .withKeyConditions(conditions)
+                .withAttributesToGet(ATTR_TABLE_PATH, ATTR_FILE_NAME)
+        ).getItems();
+
+        for (Map<String,AttributeValue> m : items) {
+            LOG.debug("removeMetadata - Dropping item {}", m);
+            client.deleteItem(tableName, m);
+        }
+    }
+
     @Override
     public CloseableIterator<String> read(Path path, Configuration hadoopConf) throws IOException {
         // With many concurrent readers/writers, there's a chance that concurrent 'recovery'
@@ -156,7 +182,7 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
             }
             client.putItem(createPutItemRequest(entry, overwrite));
         } catch (ConditionalCheckFailedException e) {
-            LOG.debug(e.toString());
+            LOG.debug("Conditional check failed", e);
             throw new java.nio.file.FileAlreadyExistsException(
                 entry.absoluteFilePath().toString()
             );

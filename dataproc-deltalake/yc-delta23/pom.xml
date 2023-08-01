@@ -19,7 +19,7 @@
   <groupId>com.yandex.cloud</groupId>
   <artifactId>yc-delta23-multi-dp21</artifactId>
   <!-- Update YcS3YdbLogStore.VERSION! -->
-  <version>1.0</version>
+  <version>1.1</version>
   <name>Yandex Data Proc DeltaLake 2.3 support</name>
   <packaging>jar</packaging>
 
@@ -49,6 +49,18 @@
               <artifactId>protobuf-java</artifactId>
           </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-catalyst_2.13</artifactId>
+        <version>3.3.2</version>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-sql_2.13</artifactId>
+        <version>3.3.2</version>
+        <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>

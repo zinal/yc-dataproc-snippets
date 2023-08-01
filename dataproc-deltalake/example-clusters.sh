@@ -18,7 +18,7 @@ YC_DDB_ENDPOINT=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmok
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
-for YC_CLUSTER in dl1 dl2; do
+for YC_CLUSTER in dl1; do
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
@@ -46,17 +46,14 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.kryoserializer.buffer.max=256m \
   --property spark:spark.jars=s3a://${YC_BUCKET}/jars/yc-delta23-multi-dp21-1.0-fatjar.jar \
   --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
-  --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+  --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.YcDeltaCatalog \
   --property spark:spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
   --property spark:spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=${YC_DDB_ENDPOINT} \
   --property spark:spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=${YC_DDB_LOCKBOX} \
-  --property spark:spark.databricks.delta.snapshotCache.storageLevel=MEMORY_AND_DISK_SER_2 \
+  --property spark:spark.databricks.delta.snapshotCache.storageLevel=MEMORY_ONLY_SER_2 \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
   --property livy:livy.spark.deploy-mode=cluster \
-  --property dataproc:hive.thrift.impl=spark \
   --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_normal.sh" \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_geesefs.sh,args=${YC_BUCKET}" \
   --async
 done
