@@ -13,10 +13,12 @@ Delta Lake решает задачу обновления данных в ана
 Основным ограничением этой версии Delta Lake является запрет на конкурентную модификацию таблиц в S3-совместимом хранилище (см. [примечание](https://docs.delta.io/0.8.0/delta-storage.html#amazon-s3) в официальной документации). Это ограничение означает, что при работе с таблицами Delta Lake необходимо координировать операции записи таким образом, чтобы исключить одновременную модификацию данных в одной таблице из разных кластеров Data Proc, а также из разных заданий Spark в рамках одного кластера. Нарушение этого требования может привести к неожиданной потере хранимой в таблице информации.
 
 Для использования Delta Lake в сочетании с Data Proc 2.0 достаточно в зависимостях заданий добавить библиотеку `delta-core_2.12-0.8.0.jar`, а также установить следующие свойства Spark:
+
 * `spark.sql.extensions` в значение `io.delta.sql.DeltaSparkSessionExtension`
 * `spark.sql.catalog.spark_catalog` в значение `org.apache.spark.sql.delta.catalog.DeltaCatalog`
 
 Библиотека `delta-core_2.12-0.8.0.jar` может быть добавлена в зависимости заданий любым из следующих способов:
+
 1. через установку свойства `spark.jars` для конкретного задания либо для кластера в целом, значением является URL файла библиотеки, файл должен быть доступен по указанному URL;
 2. через установку свойства `spark.jars.packages` в значение `io.delta:delta-core_2.12:0.8.0`, должен быть настроен сетевой доступ в Maven Central, либо сконфигурирован альтернативный репозиторий Maven;
 3. через установку свойств `spark.driver.extraClassPath` и `spark.executor.extraClassPath` в полный путь к файлу библиотеки, файл должен быть [скопирован на все узлы кластера](../dataproc-copy-files/).
@@ -25,7 +27,7 @@ Delta Lake решает задачу обновления данных в ана
 
 Пример запуска и использования сессии Spark SQL для работы с таблицами Delta Lake:
 
-```
+```bash
 $ spark-sql --executor-memory 20g --executor-cores 4 \
   --conf spark.executor.heartbeatInterval=10s \
   --conf spark.jars.packages=io.delta:delta-core_2.12:0.8.0 \
@@ -176,7 +178,7 @@ spark-sql>
     $ spark-sql --executor-memory 20g --executor-cores 4 \
       --jars /s3data/jars/yc-delta-multi-dp21-1.0-fatjar.jar \
       --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
-      --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+      --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.YcDeltaCatalog \
       --conf spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
       --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etngt3b6eh9qfc80vt54/ \
       --conf spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=e6qr20sbgn3ckpalh54p
