@@ -56,7 +56,7 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
 
     // YcS3YdbLogStore Delta20 1.0 2023.07.14
     // YcS3YdbLogStore Delta20 1.1 SNAPSHOT
-    public static final String VERSION = "YcS3YdbLogStore Delta20 1.0 2023.07.14";
+    public static final String VERSION = "YcS3YdbLogStore Delta20 1.1 2023.08.01";
 
     /**
      * Configuration keys for the DynamoDB client.
@@ -121,6 +121,32 @@ public class YcS3YdbLogStore extends BaseExternalLogStore {
 
         client = getClient();
         tryEnsureTableExists(hadoopConf);
+    }
+
+    /**
+     * Dropping all the metadata which were created for the specified table path.
+     * @param tablePath Table path to clean up.
+     */
+    public void removeMetadata(String tablePath) {
+        final Map<String, Condition> conditions = new ConcurrentHashMap<>();
+        conditions.put(
+            ATTR_TABLE_PATH,
+            new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue(tablePath))
+        );
+
+        final List<Map<String,AttributeValue>> items = client.query(
+            new QueryRequest(tableName)
+                .withConsistentRead(true)
+                .withKeyConditions(conditions)
+                .withAttributesToGet(ATTR_TABLE_PATH, ATTR_FILE_NAME)
+        ).getItems();
+
+        for (Map<String,AttributeValue> m : items) {
+            LOG.debug("removeMetadata - Dropping item {}", m);
+            client.deleteItem(tableName, m);
+        }
     }
 
     @Override
