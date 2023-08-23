@@ -21,7 +21,6 @@ class WorkContext(object):
         self.lbxSecretId = ''
         self.tableName = 'delta_log'
         self.tvExp = Decimal(time.mktime(datetime.now().timetuple()))
-        self.tvExp = Decimal(1692886876)
 
 def handleItem(wc: WorkContext, item):
     expireTime = item.get('expireTime', Decimal('0'))
@@ -67,6 +66,7 @@ def run(wc: WorkContext):
     payloadSvc = wc.sdk.client(payload_grpc.PayloadServiceStub)
     credsData = payloadSvc.Get(payload_pb.GetPayloadRequest(secret_id = wc.lbxSecretId))
     wc.ydbConn = boto3.resource('dynamodb',
+            region_name = 'ru-central1',
             endpoint_url = wc.docapiEndpoint,
             aws_access_key_id = get_key_id(credsData),
             aws_secret_access_key = get_key_secret(credsData))
