@@ -34,12 +34,57 @@ venv-pack -o pyspark_venv.tar.gz
 Сформированный файл с образом окружения Python (в примере выше `pyspark_venv.tar.gz`) нужно поместить в бакет Yandex Object Storage. Это можно сделать различными способами, например - скопировать в бакет напрямую с узла кластера Data Proc, на котором этот файл был сформирован, с помощью команды `hdfs`:
 
 ```bash
-sudo -u hdfs hdfs dfs -copyFromLocal pyspark_venv.tar.gz s3a://dproc-wh/pyenv/pyspark_venv.tar.gz
+sudo -u hdfs hdfs dfs -copyFromLocal pyspark_venv.tar.gz s3a://mybucket/pyenv/pyspark_venv.tar.gz
 ```
 
 Для выполнения копирования файла у сервисной учётной записи, связанной с кластером Data Proc, должны быть права на запись в соответствующий бакет Yandex Object Storage.
 
-### 2.2. Использование виртуального окружения в среде Yandex DataSphere
+### 2.2. Использование виртуального окружения в заданиях Spark
+
+Для использования созданного виртуального окружения в заданиях Spark необходимо передать в задание следующие свойства:
+
+* `spark.yarn.dist.archives` - ссылка на архив виртуального окружения, в следующем формате: `s3a://ИмяБакета/путь/ФайлОкружения.tar.gz#Псевдоним`. После ссылки на файл архива через символ `#` указывается псевдоним (например, строка `environment`), который будет служить именем подкаталога, в который будет распакован архив виртуального окружения.
+* `spark.yarn.appMasterEnv.PYSPARK_PYTHON` - переопределение команды запуска интерпретатора Python для Application Master задания, должно быть установлено в значение `./Псевдоним/bin/python`;
+* `spark.yarn.appMasterEnv.PYSPARK_DRIVER_PYTHON` - переопределение команды запуска интерпретатора Python для драйвера задания, должно совпадать со значением свойства `spark.yarn.appMasterEnv.PYSPARK_PYTHON`.
+
+Запуск заданий должен выполняться в режиме "cluster", в противном случае виртуальное окружение не будет должным образом подготовлено для работы драйвера задания.
+
+Пример запуска задания с использованием виртуального окружения утилитой `spark-submit` (команда выполняется на мастер-узле кластера Data Proc):
+
+```bash
+spark-submit --deploy-mode cluster \
+  --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=./env/bin/python \
+  --conf spark.yarn.appMasterEnv.PYSPARK_DRIVER_PYTHON=./env/bin/python \
+  --conf spark.yarn.dist.archives='s3a://mybucket/pyenv/pyspark_venv.tar.gz#env' \
+  mypythonjob.py
+```
+
+Пример запуска задания с использованием виртуального окружения с помощью YC CLI:
+
+```bash
+yc dataproc job create-pyspark --cluster-name mycluster --name mypythonjob \
+  --properties spark.submit.deployMode=cluster \
+  --properties spark.yarn.appMasterEnv.PYSPARK_PYTHON=./env/bin/python \
+  --properties spark.yarn.appMasterEnv.PYSPARK_DRIVER_PYTHON=./env/bin/python \
+  --properties spark.yarn.dist.archives='s3a://mybucket/pyenv/pyspark_venv.tar.gz#env' \
+  --main-python-file-uri=s3a://mybucket/scripts/mypythonjob.py
+```
+
+Возможное наполнение файла `mypythonjob.py`:
+
+```python
+from pyspark import SparkContext, SparkConf
+from pyspark.sql import SQLContext
+
+conf = SparkConf().setAppName("mypythonjob")
+sc = SparkContext(conf=conf)
+sql = SQLContext(sc)
+
+import catboost
+print(catboost.__version__)
+```
+
+### 2.3. Использование виртуального окружения в среде Yandex DataSphere
 
 Интеграция Yandex DataSphere и Yandex Data Proc основана на использовании компонента [Apache Livy](https://livy.apache.org/) в составе Data Proc.
 
@@ -73,7 +118,7 @@ from catboost import CatBoostRegressor
 #...
 ```
 
-### 2.3. Использование виртуального окружения в среде интерпретатора Zeppelin
+### 2.4. Использование виртуального окружения в среде интерпретатора Zeppelin
 
 При использовании виртуальных окружений Python наиболее логичным режимом работы контекста Spark выглядит "Per Note / Isolated", поскольку в этом режиме разные блокноты могут задействовать разные виртуальные окружения Python. Пример настроек в UI Zeppelin см. на рисунке ниже.
 
