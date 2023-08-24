@@ -124,6 +124,8 @@ def processS3_item(wc: WorkContext, mode: S3ItemMode, bucket: str, prefix: str, 
 def processS3(wc: WorkContext, bucket: str, mode: S3ItemMode, prefix: str):
     if not prefix.endswith("/"):
         prefix = prefix + "/"
+    if prefix.startswith("/"):
+        prefix = prefix[1:]
     logging.info(f"Processing prefix '{prefix}' in bucket '{bucket}' as {mode}")
     # Dict structure below:
     # "database.db/table" -> ["000.json.XYZ", "wh/database.db/table/_delta_log/.tmp/000.json.XYZ"]
@@ -167,8 +169,14 @@ def runS3(wc: WorkContext):
             items = line.split()
             if len(items)!=3:
                 logging.warn(f"Illegal configuration line skipped: {line}")
-            mode = S3ItemMode_conv(items[1])
-            processS3(wc, items[0], mode, items[2])
+            else:
+                bucket = items[0]
+                mode = S3ItemMode_conv(items[1])
+                prefix = items[2]
+                if len(bucket)>0 and len(prefix)>0:
+                    processS3(wc, bucket, mode, prefix)
+                else:
+                    logging.warn(f"Unparsable configuration line skipped: {line}")
 
 def get_key_id(creds):
     for e in creds.entries:
