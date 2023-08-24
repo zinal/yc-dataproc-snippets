@@ -1,7 +1,7 @@
 #! /bin/sh
 # DeltaLake DocAPI table maintenance script removal
 
-set -e
+set +e
 set -u
 
 . ./ddb-maint-config.sh

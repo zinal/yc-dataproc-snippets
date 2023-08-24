@@ -37,26 +37,26 @@ yc_secret_id=`yc lockbox secret get --name ${sa_name} | grep -E '^id: ' | (read 
 yc lockbox secret add-access-binding --role lockbox.payloadViewer --name ${sa_name} --service-account-name ${sa_name}
 
 
-echo `date`" - Creating the function ${cf_name}..."
-yc serverless function create --name=${cf_name}
+echo `date`" - Creating the function ${cf_ddb_name}..."
+yc serverless function create --name=${cf_ddb_name}
 
-echo `date`" - Creating the function version ${cf_name}..."
+echo `date`" - Creating the function version ${cf_ddb_name}..."
 yc serverless function version create \
-  --function-name=${cf_name} \
+  --function-name=${cf_ddb_name} \
   --runtime python39 \
   --entrypoint cfunc.handler \
   --memory 128m \
   --execution-timeout 300s \
   --service-account-id ${sa_id} \
-  --environment DOCAPI_ENDPOINT=${docapi_endpoint},LBX_SECRET_ID=${yc_secret_id},TABLE_NAME=${docapi_table} \
-  --source-path cf-cleanup/deltalake-cleanup.zip
+  --environment MODE=ddb,DOCAPI_ENDPOINT=${docapi_endpoint},LBX_SECRET_ID=${yc_secret_id},TABLE_NAME=${docapi_table} \
+  --source-path cf-cleanup/cf-delta-cleanup.zip
 
 # Run once per hour
-echo `date`" - Scheduling the function ${cf_name}..."
+echo `date`" - Scheduling the function ${cf_ddb_name}..."
 yc serverless trigger create timer \
-  --name ${cf_name} \
+  --name ${cf_ddb_name} \
   --cron-expression '0 * * * ? *' \
-  --invoke-function-name ${cf_name} \
+  --invoke-function-name ${cf_ddb_name} \
   --invoke-function-service-account-id ${sa_id} \
   --retry-attempts 0
 
