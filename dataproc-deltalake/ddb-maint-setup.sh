@@ -19,6 +19,8 @@ yc iam service-account create --name ${sa_name}
 echo `date`" - Setting permissions for service account ${sa_name}..."
 yc resource-manager folder add-access-binding --role ydb.editor \
    --id ${yc_folder} --service-account-name ${sa_name}
+yc resource-manager folder add-access-binding --role storage.editor \
+   --id ${yc_folder} --service-account-name ${sa_name}
 yc resource-manager folder add-access-binding --role serverless.functions.invoker \
    --id ${yc_folder} --service-account-name ${sa_name}
 
@@ -40,6 +42,9 @@ yc lockbox secret add-access-binding --role lockbox.payloadViewer --name ${sa_na
 echo `date`" - Creating the function ${cf_ddb_name}..."
 yc serverless function create --name=${cf_ddb_name}
 
+echo `date`" - Creating the function ${cf_s3_name}..."
+yc serverless function create --name=${cf_s3_name}
+
 echo `date`" - Creating the function version ${cf_ddb_name}..."
 yc serverless function version create \
   --function-name=${cf_ddb_name} \
@@ -48,7 +53,18 @@ yc serverless function version create \
   --memory 128m \
   --execution-timeout 300s \
   --service-account-id ${sa_id} \
-  --environment MODE=ddb,DOCAPI_ENDPOINT=${docapi_endpoint},LBX_SECRET_ID=${yc_secret_id},TABLE_NAME=${docapi_table} \
+  --environment MODE=ddb,LBX_SECRET_ID=${yc_secret_id},DOCAPI_ENDPOINT=${docapi_endpoint},TABLE_NAME=${docapi_table} \
+  --source-path cf-cleanup/cf-delta-cleanup.zip
+
+echo `date`" - Creating the function version ${cf_s3_name}..."
+yc serverless function version create \
+  --function-name=${cf_s3_name} \
+  --runtime python39 \
+  --entrypoint cfunc.handler \
+  --memory 128m \
+  --execution-timeout 600s \
+  --service-account-id ${sa_id} \
+  --environment MODE=s3,LBX_SECRET_ID=${yc_secret_id},PREFIX_FILE=${s3_prefix_file} \
   --source-path cf-cleanup/cf-delta-cleanup.zip
 
 # Run once per hour
@@ -57,6 +73,15 @@ yc serverless trigger create timer \
   --name ${cf_ddb_name} \
   --cron-expression '0 * * * ? *' \
   --invoke-function-name ${cf_ddb_name} \
+  --invoke-function-service-account-id ${sa_id} \
+  --retry-attempts 0
+
+# Run once per day at 3:00 AM
+echo `date`" - Scheduling the function ${cf_s3_name}..."
+yc serverless trigger create timer \
+  --name ${cf_s3_name} \
+  --cron-expression '0 3 * * ? *' \
+  --invoke-function-name ${cf_s3_name} \
   --invoke-function-service-account-id ${sa_id} \
   --retry-attempts 0
 

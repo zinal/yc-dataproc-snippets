@@ -6,11 +6,17 @@ set -u
 
 . ./ddb-maint-config.sh
 
-echo `date`" - Deleting trigger ${cf_name}..."
-yc serverless trigger delete --name ${cf_name}
+echo `date`" - Deleting trigger ${cf_ddb_name}..."
+yc serverless trigger delete --name ${cf_ddb_name}
 
-echo `date`" - Deleting function ${cf_name}..."
-yc serverless function delete ${cf_name}
+echo `date`" - Deleting function ${cf_ddb_name}..."
+yc serverless function delete ${cf_ddb_name}
+
+echo `date`" - Deleting trigger ${cf_s3_name}..."
+yc serverless trigger delete --name ${cf_s3_name}
+
+echo `date`" - Deleting function ${cf_s3_name}..."
+yc serverless function delete ${cf_s3_name}
 
 echo `date`" - Deleting lockbox secret ${sa_name}..."
 yc lockbox secret delete --name ${sa_name}
