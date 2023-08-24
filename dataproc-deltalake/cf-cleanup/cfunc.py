@@ -3,6 +3,8 @@ import sys
 import json
 import logging
 import time
+from enum import IntEnum
+from urllib.parse import urlparse
 from datetime import datetime
 from decimal import *
 import yandexcloud
@@ -17,6 +19,7 @@ class WorkContext(object):
     __slots__ = ("sdk", "lbxSecretId",
                  "awsRegionId", "awsKeyId", "awsKeySecret",
                  "s3PrefixFile",
+                 "s3session",
                  "docapiEndpoint", "tableName", "tvExpDdb",
                  "ydbConn", "ddbTable")
 
@@ -72,8 +75,80 @@ def runDdb(wc: WorkContext):
     totalCount = processDdb(wc)
     logging.info(f"Processed {totalCount} records.")
 
+class S3ItemMode(IntEnum):
+    WAREHOUSE = 2
+    DATABASE = 1
+    TABLE = 0
+
+def S3ItemMode_conv(mode: str):
+    if mode=="W":
+        return S3ItemMode.WAREHOUSE
+    if mode=="D":
+        return S3ItemMode.DATABASE
+    if mode=="T":
+        return S3ItemMode.TABLE
+    raise Exception(f"Unsupported S3 processing mode: {mode}")
+
+def processS3_item(wc: WorkContext, mode: S3ItemMode, bucket: str, prefix: str, key: str):
+    sval = key
+    if sval.startswith(prefix):
+        sval = sval[len(prefix):] # cut the prefix
+    aval = sval.split(sep='/')
+    if len(aval) != (3 + int(mode)):
+        return False
+    ix = int(mode)
+    if aval[ix]!='_delta_log' or aval[ix+1]!='.tmp':
+        return False
+    fname = aval[ix+2]
+    if fname.find('.json.') < 0:
+        return False
+    print(key)
+    return True
+
+def processS3(wc: WorkContext, bucket: str, mode: S3ItemMode, prefix: str):
+    if not prefix.endswith("/"):
+        prefix = prefix + "/"
+    logging.info(f"Processing prefix '{prefix}' in bucket '{bucket}' as {mode}")
+    prevToken = None
+    while True:
+        if prevToken is None:
+            response = wc.s3session.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        else:
+            response = wc.s3session.list_objects_v2(Bucket=bucket, Prefix=prefix, ContinuationToken=prevToken)
+        contents = response.get('Contents', [])
+        for item in contents:
+            key = item.get('Key', None)
+            if key is not None and not key.endswith("/"):
+                processS3_item(wc, mode, bucket, prefix, key)
+        isTruncated = response.get('IsTruncated', False)
+        if not isTruncated:
+            break
+        prevToken = response.get('NextContinuationToken', None)
+
 def runS3(wc: WorkContext):
-    True
+    session = boto3.session.Session()
+    wc.s3session = session.client(
+        service_name='s3',
+        endpoint_url='https://storage.yandexcloud.net',
+        region_name = wc.awsRegionId,
+        aws_access_key_id = wc.awsKeyId,
+        aws_secret_access_key = wc.awsKeySecret,
+    )
+    s3pf = urlparse(wc.s3PrefixFile)
+    s3pf_bucket = s3pf.hostname
+    s3pf_path = s3pf.path
+    if s3pf_path.startswith("/"):
+        s3pf_path = s3pf_path[1:]
+    logging.info(f"Reading S3 cleanup config from {s3pf_bucket}:{s3pf_path}...")
+    config_response = wc.s3session.get_object(Bucket=s3pf_bucket, Key=s3pf_path)
+    for line in config_response['Body'].iter_lines():
+        line = line.decode('utf-8').strip()
+        if not line.startswith("#"):
+            items = line.split()
+            if len(items)!=3:
+                logging.warn(f"Illegal configuration line skipped: {line}")
+            mode = S3ItemMode_conv(items[1])
+            processS3(wc, items[0], mode, items[2])
 
 def get_key_id(creds):
     for e in creds.entries:
@@ -95,6 +170,7 @@ def runAny(sdk: yandexcloud.SDK, mode: str):
     credsData = payloadSvc.Get(payload_pb.GetPayloadRequest(secret_id = wc.lbxSecretId))
     wc.awsKeyId = get_key_id(credsData)
     wc.awsKeySecret = get_key_secret(credsData)
+    logging.debug(f"Using AWS key id {wc.awsKeyId}")
     if len(mode)==0:
         mode = "ddb"
     if mode == "ddb":
@@ -112,9 +188,10 @@ def handler(event, context):
     mode = os.getenv("MODE")
     runAny(sdk, mode)
 
-# export LBX_SECRET_ID=e6qr6lb9vjs2s19kf1eb
 # export SA_KEY_FILE=/Users/mzinal/Magic/key-ydb-sa1.json
 # export SA_KEY_FILE=/home/zinal/Keys/ydb-sa1-key1.json
+#
+# export LBX_SECRET_ID=e6qr6lb9vjs2s19kf1eb
 # export DOCAPI_ENDPOINT=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etngt3b6eh9qfc80vt54
 # export TABLE_NAME=delta_log
 # python3 cf-cleanup/cfunc.py ddb
@@ -123,8 +200,11 @@ def handler(event, context):
 # export PREFIX_FILE=s3://dproc-wh/config/delta-prefixes.txt
 # python3 s3
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    mode = 'ddb'
+    logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger('s3transfer').setLevel(logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.INFO)
+    logging.getLogger('urllib3').setLevel(logging.INFO)
+    mode = 's3'
     if len(sys.argv) > 1:
         mode = sys.argv[1]
     sakey_filename = os.getenv('SA_KEY_FILE')
