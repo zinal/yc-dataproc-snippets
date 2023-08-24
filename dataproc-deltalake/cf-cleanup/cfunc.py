@@ -19,7 +19,7 @@ class WorkContext(object):
     __slots__ = ("sdk", "lbxSecretId",
                  "awsRegionId", "awsKeyId", "awsKeySecret",
                  "s3PrefixFile",
-                 "s3session",
+                 "s3session", "s3temp",
                  "docapiEndpoint", "tableName", "tvExpDdb",
                  "ydbConn", "ddbTable")
 
@@ -89,6 +89,15 @@ def S3ItemMode_conv(mode: str):
         return S3ItemMode.TABLE
     raise Exception(f"Unsupported S3 processing mode: {mode}")
 
+def removeS3extras(wc: WorkContext, bucket: str):
+    for tabkey, tabval in wc.s3temp.items():
+        if len(tabval) > 1:
+            tabval.sort()
+            for ix in range(0, len(tabval)-1):
+                key = tabval[ix][1]
+                logging.info(f"Removing {key}")
+                wc.s3session.delete_object(Bucket=bucket, Key=key)
+
 def processS3_item(wc: WorkContext, mode: S3ItemMode, bucket: str, prefix: str, key: str):
     sval = key
     if sval.startswith(prefix):
@@ -102,13 +111,23 @@ def processS3_item(wc: WorkContext, mode: S3ItemMode, bucket: str, prefix: str, 
     fname = aval[ix+2]
     if fname.find('.json.') < 0:
         return False
-    print(key)
+    tabkey = ''
+    for i in range(0, ix):
+        tabkey = tabkey + '/' + aval[i]
+    tabval = wc.s3temp.get(tabkey, None)
+    if tabval is None:
+        tabval = []
+        wc.s3temp[tabkey] = tabval
+    tabval.append([fname, key])
     return True
 
 def processS3(wc: WorkContext, bucket: str, mode: S3ItemMode, prefix: str):
     if not prefix.endswith("/"):
         prefix = prefix + "/"
     logging.info(f"Processing prefix '{prefix}' in bucket '{bucket}' as {mode}")
+    # Dict structure below:
+    # "database.db/table" -> ["000.json.XYZ", "wh/database.db/table/_delta_log/.tmp/000.json.XYZ"]
+    wc.s3temp = dict()
     prevToken = None
     while True:
         if prevToken is None:
@@ -124,6 +143,7 @@ def processS3(wc: WorkContext, bucket: str, mode: S3ItemMode, prefix: str):
         if not isTruncated:
             break
         prevToken = response.get('NextContinuationToken', None)
+    removeS3extras(wc, bucket)
 
 def runS3(wc: WorkContext):
     session = boto3.session.Session()
