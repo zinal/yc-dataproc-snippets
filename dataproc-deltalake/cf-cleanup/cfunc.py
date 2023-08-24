@@ -14,26 +14,33 @@ from boto3.dynamodb.conditions import Attr as BotoAttr
 USER_AGENT = 'deltalake-cleanup'
 
 class WorkContext(object):
-    __slots__ = ("sdk", "lbxSecretId", "docapiEndpoint", "ydbConn", "tableName", "ddbTable", "tvExp")
+    __slots__ = ("sdk", "lbxSecretId",
+                 "awsRegionId", "awsKeyId", "awsKeySecret",
+                 "s3PrefixFile",
+                 "docapiEndpoint", "tableName", "tvExpDdb",
+                 "ydbConn", "ddbTable")
 
     def __init__(self) -> None:
-        self.docapiEndpoint = ''
         self.lbxSecretId = ''
+        self.awsRegionId = 'ru-central1'
+        self.s3PrefixFile = ''
+        self.docapiEndpoint = ''
         self.tableName = 'delta_log'
-        self.tvExp = Decimal(time.mktime(datetime.now().timetuple()))
+        self.tvExpDdb = Decimal(time.mktime(datetime.now().timetuple()))
 
-def handleItem(wc: WorkContext, item):
+def handleDdbItem(wc: WorkContext, item):
     expireTime = item.get('expireTime', Decimal('0'))
-    if expireTime <= wc.tvExp: # Double check, as we received pre-filtered data from YDB
+    if expireTime <= wc.tvExpDdb: # Extra check, we received pre-filtered data from YDB
         fileName = item.get('fileName', '')
         tablePath = item.get('tablePath', '')
         if len(fileName) > 0 and len(tablePath) > 0:
             logging.info(f"Removing obsolete record for table {tablePath}, file {fileName}")
             wc.ddbTable.delete_item(Key={'fileName': fileName, 'tablePath': tablePath})
 
-def process(wc: WorkContext):
+def processDdb(wc: WorkContext):
     startKey = None
-    filter = BotoAttr('expireTime').lte(wc.tvExp)
+    totalCount = 0
+    filter = BotoAttr('expireTime').lte(wc.tvExpDdb)
     while True:
         if startKey is None:
             result = wc.ddbTable.scan(Select='SPECIFIC_ATTRIBUTES', FilterExpression=filter,
@@ -42,13 +49,31 @@ def process(wc: WorkContext):
             result = wc.ddbTable.scan(Select='SPECIFIC_ATTRIBUTES', FilterExpression=filter,
                     ProjectionExpression='tablePath,fileName,expireTime',
                     ExclusiveStartKey=startKey)
-        if result.get('Count', 0) < 1:
+        localCount = result.get('Count', 0)
+        if localCount < 1:
             break
+        totalCount += localCount
         for item in result.get('Items', []):
-            handleItem(wc, item)
+            handleDdbItem(wc, item)
         startKey = result.get('LastEvaluatedKey', None)
         if startKey is None:
             break
+    return totalCount
+
+def runDdb(wc: WorkContext):
+    logging.info(f"Cleanup of table {wc.tableName} in {wc.docapiEndpoint}")
+    wc.ydbConn = boto3.resource('dynamodb',
+            region_name = wc.awsRegionId,
+            endpoint_url = wc.docapiEndpoint,
+            aws_access_key_id = wc.awsKeyId,
+            aws_secret_access_key = wc.awsKeySecret)
+    wc.ddbTable = wc.ydbConn.Table(wc.tableName)
+    logging.info("Connected, processing...")
+    totalCount = processDdb(wc)
+    logging.info(f"Processed {totalCount} records.")
+
+def runS3(wc: WorkContext):
+    True
 
 def get_key_id(creds):
     for e in creds.entries:
@@ -62,39 +87,49 @@ def get_key_secret(creds):
             return e.text_value
     return ''
 
-def run(wc: WorkContext):
+def runAny(sdk: yandexcloud.SDK, mode: str):
+    wc = WorkContext()
+    wc.sdk = sdk
+    wc.lbxSecretId = os.getenv("LBX_SECRET_ID")
     payloadSvc = wc.sdk.client(payload_grpc.PayloadServiceStub)
     credsData = payloadSvc.Get(payload_pb.GetPayloadRequest(secret_id = wc.lbxSecretId))
-    wc.ydbConn = boto3.resource('dynamodb',
-            region_name = 'ru-central1',
-            endpoint_url = wc.docapiEndpoint,
-            aws_access_key_id = get_key_id(credsData),
-            aws_secret_access_key = get_key_secret(credsData))
-    wc.ddbTable = wc.ydbConn.Table(wc.tableName)
-    process(wc)
+    wc.awsKeyId = get_key_id(credsData)
+    wc.awsKeySecret = get_key_secret(credsData)
+    if len(mode)==0:
+        mode = "ddb"
+    if mode == "ddb":
+        wc.docapiEndpoint = os.getenv("DOCAPI_ENDPOINT")
+        wc.tableName = os.getenv("TABLE_NAME")
+        runDdb(wc)
+    else:
+        wc.s3PrefixFile = os.getenv("PREFIX_FILE")
+        runS3(wc)
 
+# Cloud Function entry point
 def handler(event, context):
     logging.getLogger().setLevel(logging.INFO)
-    wc = WorkContext()
-    wc.docapiEndpoint = os.getenv("DOCAPI_ENDPOINT")
-    wc.lbxSecretId = os.getenv("LBX_SECRET_ID")
-    wc.tableName = os.getenv("TABLE_NAME")
-    wc.sdk = yandexcloud.SDK(user_agent=USER_AGENT)
-    run(wc)
+    sdk = yandexcloud.SDK(user_agent=USER_AGENT)
+    mode = os.getenv("MODE")
+    runAny(sdk, mode)
 
-# python3 cf-cleanup/cfunc.py docapiEndpoint lbxSecretId delta_log /Users/mzinal/Magic/key-ydb-sa1.json
+# export LBX_SECRET_ID=e6qr6lb9vjs2s19kf1eb
+# export SA_KEY_FILE=/Users/mzinal/Magic/key-ydb-sa1.json
+# export SA_KEY_FILE=/home/zinal/Keys/ydb-sa1-key1.json
+# export DOCAPI_ENDPOINT=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etngt3b6eh9qfc80vt54
+# export TABLE_NAME=delta_log
+# python3 cf-cleanup/cfunc.py ddb
+# 
+# export LBX_SECRET_ID=e6qr6lb9vjs2s19kf1eb
+# export PREFIX_FILE=s3://dproc-wh/config/delta-prefixes.txt
+# python3 s3
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    wc = WorkContext()
-    yc_sa_key_filename = 'sakey.json'
+    mode = 'ddb'
     if len(sys.argv) > 1:
-        wc.docapiEndpoint = sys.argv[1]
-    if len(sys.argv) > 2:
-        wc.lbxSecretId = sys.argv[2]
-    if len(sys.argv) > 3:
-        wc.tableName = sys.argv[3]
-    if len(sys.argv) > 4:
-        yc_sa_key_filename = sys.argv[4]
-    with open(yc_sa_key_filename) as infile:
-        wc.sdk = yandexcloud.SDK(service_account_key=json.load(infile), user_agent=USER_AGENT)
-    run(wc)
+        mode = sys.argv[1]
+    sakey_filename = os.getenv('SA_KEY_FILE')
+    if sakey_filename is None:
+        sakey_filename = 'sakey.json'
+    with open(sakey_filename) as infile:
+        sdk = yandexcloud.SDK(service_account_key=json.load(infile), user_agent=USER_AGENT)
+    runAny(sdk, mode)
