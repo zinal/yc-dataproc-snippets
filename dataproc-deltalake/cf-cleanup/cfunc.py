@@ -98,7 +98,7 @@ def removeS3extras(wc: WorkContext, bucket: str):
                 logging.info(f"Removing {key}")
                 wc.s3session.delete_object(Bucket=bucket, Key=key)
 
-def processS3_item(wc: WorkContext, mode: S3ItemMode, bucket: str, prefix: str, key: str):
+def processS3_item(wc: WorkContext, mode: S3ItemMode, prefix: str, key: str):
     sval = key
     if sval.startswith(prefix):
         sval = sval[len(prefix):] # cut the prefix
@@ -140,7 +140,7 @@ def processS3(wc: WorkContext, bucket: str, mode: S3ItemMode, prefix: str):
         for item in contents:
             key = item.get('Key', None)
             if key is not None and not key.endswith("/"):
-                processS3_item(wc, mode, bucket, prefix, key)
+                processS3_item(wc, mode, prefix, key)
         isTruncated = response.get('IsTruncated', False)
         if not isTruncated:
             break
