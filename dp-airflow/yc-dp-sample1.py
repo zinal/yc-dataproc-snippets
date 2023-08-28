@@ -33,7 +33,7 @@ def ProcessJob():
         computenode_count=3,
         datanode_count=0,
         services=("SPARK", "YARN"),
-        labels={"mylabel1": 1, "mylabel2": 2},
+        labels={"mylabel1": "1", "mylabel2": "2"},
     )
 
     create_spark_job = DataprocCreateSparkJobOperator(
