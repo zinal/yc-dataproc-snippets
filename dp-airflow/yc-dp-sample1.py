@@ -32,9 +32,8 @@ def ProcessJob():
         cluster_image_version='2.1',
         computenode_count=3,
         datanode_count=0,
-        ssh_public_keys=("ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAZlAx14XczxBPraPKzJgE4dTrD3wlDLrFd40zkEvfrIBr2gOqDHKs9YLfYjPQCaGNPwxyONWp/KHX7ifm9gj6c= zinal@main"),
         services=("SPARK", "YARN"),
-        labels=("mylabel1", "mylabel2")
+        labels={"mylabel1": 1, "mylabel2": 2},
     )
 
     create_spark_job = DataprocCreateSparkJobOperator(
