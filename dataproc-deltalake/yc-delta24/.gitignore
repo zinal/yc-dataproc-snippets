@@ -1,6 +1,0 @@
-/target/
-/deps/
-.vscode
-nb-configuration.xml
-nbactions.xml
-*.tmp
