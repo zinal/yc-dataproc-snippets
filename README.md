@@ -10,7 +10,7 @@
 * [Настройка кластера Data Proc для работы с Apache Kafka](dataproc-kafka/)
 * [Использование автоскейлинга в заданиях Spark](dataproc-scaling/)
 * [Управление дополнительными компонентами Python](dataproc-python-repo/)
-* [Использование Delta Lake](dataproc-deltalake/)
+* [Использование Delta Lake](https://github.com/yandex-cloud/yc-delta)
 
 Примеры вспомогательных скриптов и программ:
 * [Раскраска вычислительных ресурсов Data Proc](dp-compute-colorizer/)
