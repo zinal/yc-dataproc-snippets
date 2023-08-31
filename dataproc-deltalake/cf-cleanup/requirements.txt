@@ -1,2 +1,0 @@
-yandexcloud
-boto3

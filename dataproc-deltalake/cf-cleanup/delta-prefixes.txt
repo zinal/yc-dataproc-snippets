@@ -1,2 +1,0 @@
-# bucket mode={T,D,W} prefix
-dproc-wh W wh/
