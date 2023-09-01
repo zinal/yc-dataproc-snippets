@@ -7,7 +7,6 @@
 #  * сервисный аккаунт с доступом к бакету,
 #  * кластер Data Proc с сервисом Hive Metastore
 
-YC_VERSION=2.1
 YC_ZONE=ru-central1-c
 YC_SUBNET=default-ru-central1-c
 YC_BUCKET=dproc-wh
@@ -18,11 +17,12 @@ YC_DDB_ENDPOINT=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmok
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
-for YC_CLUSTER in dl1; do
+if false; then
+for YC_CLUSTER in dl21_1; do
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
-  --version ${YC_VERSION} --ui-proxy \
+  --version 2.1 --ui-proxy \
   --services yarn,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
@@ -57,3 +57,39 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
   --async
 done
+fi
+
+if true; then
+for YC_CLUSTER in dl20_1; do
+yc dataproc cluster create ${YC_CLUSTER} \
+  --zone ${YC_ZONE} \
+  --service-account-name ${YC_SA} \
+  --version 2.0 --ui-proxy \
+  --services yarn,spark,livy,zeppelin \
+  --bucket ${YC_BUCKET} \
+  --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="static",role='computenode',resource-preset='m3-c16-m128',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="dynamic",role='computenode',resource-preset='m3-c16-m128',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=300 \
+  --ssh-public-keys-file ssh-keys.tmp \
+  --property yarn:yarn.node-labels.fs-store.root-dir=file:///hadoop/yarn/node-labels \
+  --property yarn:yarn.node-labels.enabled=true \
+  --property yarn:yarn.node-labels.configuration-type=centralized \
+  --property capacity-scheduler:yarn.scheduler.capacity.maximum-am-resource-percent=1.00 \
+  --property capacity-scheduler:yarn.scheduler.capacity.root.default.accessible-node-labels=SPARKAM \
+  --property capacity-scheduler:yarn.scheduler.capacity.root.accessible-node-labels.SPARKAM.capacity=100 \
+  --property capacity-scheduler:yarn.scheduler.capacity.root.default.accessible-node-labels.SPARKAM.capacity=100 \
+  --property core:fs.s3a.committer.threads=100 \
+  --property core:fs.s3a.connection.maximum=1000 \
+  --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
+  --property spark:spark.hadoop.hive.metastore.uris=${YC_MS_URI} \
+  --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
+  --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
+  --property spark:spark.kryoserializer.buffer=32m \
+  --property spark:spark.kryoserializer.buffer.max=256m \
+  --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
+  --property spark:spark.sql.addPartitionInBatch.size=1000 \
+  --property livy:livy.spark.deploy-mode=cluster \
+  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
+  --async
+done
+fi
