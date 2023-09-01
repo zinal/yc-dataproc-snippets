@@ -1,0 +1,45 @@
+https://github.com/swoop-inc/spark-alchemy/wiki/Spark-HyperLogLog-Functions
+
+https://mvnrepository.com/artifact/com.swoop/spark-alchemy_2.12/1.2.1
+# https://mvnrepository.com/artifact/net.agkn/hll/1.6.0
+
+spark-shell --packages com.swoop:spark-alchemy_2.12:1.2.1 
+
+import com.swoop.alchemy.spark.expressions.hll.functions._
+import org.apache.spark.sql.functions._
+
+spark.range(100000).select(
+  // exact distinct count
+  countDistinct('id).as("cntd"),
+  // Spark's HLL implementation with default 5% precision
+  approx_count_distinct('id).as("anctd_spark_default"),
+  // approximate distinct count with default 5% precision
+  hll_cardinality(hll_init_agg('id)).as("acntd_default"),
+  // approximate distinct counts with custom precision
+  map(
+    Seq(0.005, 0.02, 0.05, 0.1).flatMap { error =>
+      lit(error) :: hll_cardinality(hll_init_agg('id, error)) :: Nil
+    }: _*
+  ).as("acntd")
+).show(false)
+
+com.swoop.alchemy.spark.expressions.hll.HLLFunctionRegistration.registerFunctions(spark)
+
+spark.range(100000).createOrReplaceTempView("ids")
+
+spark.sql("""
+select
+    -- exact distinct count
+    count(distinct id) as cntd,
+    -- Spark's HLL implementation with default 5% precision
+    approx_count_distinct(id) as anctd_spark_default,
+    -- approximate distinct count with default 5% precision
+    hll_cardinality(hll_init_agg(id)) as acntd_default,
+    -- approximate distinct counts with custom precision
+    map(
+        0.005, hll_cardinality(hll_init_agg(id, 0.005)),
+        0.020, hll_cardinality(hll_init_agg(id, 0.020)),
+        0.050, hll_cardinality(hll_init_agg(id, 0.050)),
+        0.100, hll_cardinality(hll_init_agg(id, 0.100))
+    ) as acntd
+from ids""").show(false)
