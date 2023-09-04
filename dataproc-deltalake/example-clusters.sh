@@ -17,7 +17,7 @@ YC_DDB_ENDPOINT=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmok
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
 
-if false; then
+if true; then
 for YC_CLUSTER in dl21_1; do
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
@@ -26,8 +26,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --services yarn,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="static",role='computenode',resource-preset='m3-c16-m128',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="dynamic",role='computenode',resource-preset='m3-c16-m128',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=300 \
+  --subcluster name="static",role='computenode',resource-preset='s3-c16-m64',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="dynamic",role='computenode',resource-preset='s3-c16-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=300 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property yarn:yarn.node-labels.fs-store.root-dir=file:///hadoop/yarn/node-labels \
   --property yarn:yarn.node-labels.enabled=true \
@@ -39,7 +39,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:fs.s3a.committer.threads=100 \
   --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
-  --property spark:spark.hadoop.hive.metastore.uris=${YC_MS_URI} \
+  --property spark:spark.sql.catalogImplementation=hive \
+  --property spark:spark.hive.metastore.uris=${YC_MS_URI} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
@@ -68,8 +69,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --services yarn,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="static",role='computenode',resource-preset='m3-c16-m128',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="dynamic",role='computenode',resource-preset='m3-c16-m128',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=300 \
+  --subcluster name="static",role='computenode',resource-preset='s3-c16-m64',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="dynamic",role='computenode',resource-preset='s3-c16-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=300 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property yarn:yarn.node-labels.fs-store.root-dir=file:///hadoop/yarn/node-labels \
   --property yarn:yarn.node-labels.enabled=true \
@@ -81,7 +82,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:fs.s3a.committer.threads=100 \
   --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
-  --property spark:spark.hadoop.hive.metastore.uris=${YC_MS_URI} \
+  --property spark:spark.sql.catalogImplementation=hive \
+  --property spark:spark.hive.metastore.uris=${YC_MS_URI} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
@@ -89,6 +91,9 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
   --property livy:livy.spark.deploy-mode=cluster \
+  --property spark:spark.jars=s3a://${YC_BUCKET}/jars/delta-core_2.12-0.8.0.jar \
+  --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+  --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
   --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
   --async
 done
