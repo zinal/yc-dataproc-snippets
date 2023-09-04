@@ -1,0 +1,2 @@
+
+(echo "USE zombie; SET spark.databricks.delta.retentionDurationCheck.enabled = false;"; for x in `seq 1 1000`; do echo "VACUUM tab${x} RETAIN 0 HOURS;"; done) | bash ./RunSql.sh
