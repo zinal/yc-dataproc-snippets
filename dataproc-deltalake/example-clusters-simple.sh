@@ -95,5 +95,6 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
   --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=[static,s3a://${YC_BUCKET}/utils]" \
+  --async
 done
 fi
