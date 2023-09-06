@@ -58,7 +58,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
   --property livy:livy.spark.deploy-mode=cluster \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
+  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=[static,s3a://${YC_BUCKET}/utils]" \
   --async
 done
 fi
@@ -98,7 +98,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.jars=s3a://${YC_BUCKET}/jars/delta-core_2.12-0.8.0.jar \
   --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
+  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=[static,s3a://${YC_BUCKET}/utils]" \
   --async
 done
 fi
