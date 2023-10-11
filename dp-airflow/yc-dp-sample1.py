@@ -13,7 +13,7 @@ from airflow.providers.yandex.operators.yandexcloud_dataproc import (
 from airflow.utils.trigger_rule import TriggerRule
 
 AVAILABILITY_ZONE_ID = "ru-central1-b"
-S3_BUCKET_NAME = "dproc-wh"
+S3_BUCKET_NAME = "mzinal-wh1"
 DAG_ID = "yc_dp_sample1"
 
 @dag(
@@ -28,7 +28,7 @@ def ProcessJob():
         task_id="create_cluster",
         zone=AVAILABILITY_ZONE_ID,
         s3_bucket=S3_BUCKET_NAME,
-        service_account_id='ajegsd3ausbcap0fvli6',
+        service_account_id='ajetc9f6ecp7ogmqehik',
         cluster_image_version='2.1',
         computenode_count=3,
         datanode_count=0,
@@ -41,7 +41,7 @@ def ProcessJob():
         task_id="create_spark_job",
         main_jar_file_uri="file:///usr/lib/spark/examples/jars/spark-examples.jar",
         main_class="org.apache.spark.examples.SparkPi",
-        args=["1000"],
+        args=["10000"],
     )
 
     delete_cluster = DataprocDeleteClusterOperator(
@@ -53,4 +53,3 @@ def ProcessJob():
     create_cluster >> create_spark_job >> delete_cluster
 
 dag = ProcessJob()
-

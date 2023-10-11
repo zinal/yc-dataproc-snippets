@@ -17,7 +17,7 @@ YC_DDB_LOCKBOX=e6q7eqfqs962m6g9rs62
 YC_DDB_ENDPOINT='https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etnac7v7lqqiflor0sem'
 YC_SG=enpechrqs0fia7vfm2u6
 
-echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGlZ05ouGEnrrn/JsHhYtJJlJSrMkJl5xoi0mFuQ9YtTrWXvavaKk845rmRIS72hyfHwmUmekWfDvAqIvzBGPqo= mzinal@gw2" >ssh-keys.tmp
+echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFDUWfFLBZ/OdeL7geZhiaIeMVY6AsJgFe/xQI2c1NMH2HJPh0GMhxkLGJKv4U5YxCrwrFRZb+dRnlzt7L4T9FM= demo@run0" >ssh-keys.tmp
 
 if true; then
 for YC_CLUSTER in dl21_1; do
@@ -63,7 +63,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
 done
 fi
 
-if true; then
+if false; then
 for YC_CLUSTER in dl20_1; do
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
