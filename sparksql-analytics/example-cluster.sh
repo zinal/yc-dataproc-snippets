@@ -6,7 +6,10 @@
 #  * бакет Object Storage,
 #  * сервисный аккаунт с доступом к бакету,
 #  * экземпляр Hive Metastore,
-#  * группа безопасности с необходимыми настройками
+#  * группа безопасности с необходимыми настройками.
+# В кластере используется автоскейлинг, но настроен он только для варианта
+# исполнения Spark Thrift Server - другие сервисы могут завершаться аварийно
+# при срабатывании автоскейлера.
 
 YC_ZONE=ru-central1-b
 YC_SUBNET=default-ru-central1-b
@@ -25,23 +28,17 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
   --version 2.1 --ui-proxy \
-  --services yarn,spark,livy,zeppelin \
+  --services yarn,spark \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="static",role='computenode',resource-preset='s3-c16-m64',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="dynamic",role='computenode',resource-preset='s3-c16-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=600,stabilization-duration=600s \
+  --subcluster name="static",role='computenode',resource-preset='s3-c16-m64',preemptible=false,disk-type='network-ssd',disk-size=200,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET} \
+  --subcluster name="dynamic",role='computenode',resource-preset='s3-c16-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=0,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=600,stabilization-duration=600s \
   --ssh-public-keys-file ssh-keys.tmp \
   --security-group-ids ${YC_SG} \
-  --property yarn:yarn.node-labels.fs-store.root-dir=file:///hadoop/yarn/node-labels \
-  --property yarn:yarn.node-labels.enabled=true \
-  --property yarn:yarn.node-labels.configuration-type=centralized \
-  --property capacity-scheduler:yarn.scheduler.capacity.maximum-am-resource-percent=1.00 \
-  --property capacity-scheduler:yarn.scheduler.capacity.root.default.accessible-node-labels=SPARKAM \
-  --property capacity-scheduler:yarn.scheduler.capacity.root.accessible-node-labels.SPARKAM.capacity=100 \
-  --property capacity-scheduler:yarn.scheduler.capacity.root.default.accessible-node-labels.SPARKAM.capacity=100 \
   --property core:fs.s3a.committer.threads=100 \
   --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
+  --property spark:spark.executor.memory=8g \
   --property spark:spark.sql.catalogImplementation=hive \
   --property spark:spark.hive.metastore.uris=${YC_MS_URI} \
   --property spark:spark.sql.warehouse.dir=${YC_WH} \
@@ -58,10 +55,8 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.databricks.delta.snapshotCache.storageLevel=MEMORY_ONLY_SER_2 \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --property livy:livy.spark.deploy-mode=cluster \
   --property dataproc:hive.thrift.impl=spark \
   --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_geesefs.sh,args=[${YC_BUCKET},/s3data]" \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=[static,s3a://${YC_BUCKET}/utils]" \
   --async
 
 # End Of File
