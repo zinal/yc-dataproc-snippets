@@ -1,3 +1,5 @@
+SELECT * FROM parquet.`s3a://mzinal-dproc1/s3measure/INPUT/input_wide/` LIMIT 100;
+
 CREATE EXTERNAL TABLE dset1 (
   spark_partition_id integer,
   int_1 integer,
@@ -18,9 +20,9 @@ CREATE EXTERNAL TABLE dset1 (
   decimal_2 DECIMAL(10,2),
   decimal_3 DECIMAL(10,2),
   str_1 binary,
-  str_2 text,
-  str_3 text,
-  str_4 text
+  str_2 string,
+  str_3 string,
+  str_4 string
 ) STORED AS PARQUET
   LOCATION "s3a://mzinal-dproc1/s3measure/INPUT/input_wide/";
 
