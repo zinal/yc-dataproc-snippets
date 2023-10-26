@@ -57,5 +57,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
   --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_nodelabels.sh,args=static" \
   --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_normal.sh" \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_geesefs.sh,args=${YC_BUCKET}" \
+  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_geesefs.sh,args=[${YC_BUCKET},/s3data]" \
   --async

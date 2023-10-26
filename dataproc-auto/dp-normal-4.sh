@@ -47,4 +47,4 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
   --initialization-action 'uri=s3a://dproc-code/init-scripts/init_normal.sh' \
-  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_geesefs.sh,args='${YC_BUCKET}
+  --initialization-action 'uri=s3a://dproc-code/init-scripts/init_geesefs.sh,args=['${YC_BUCKET}',/s3data]'

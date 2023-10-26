@@ -1,12 +1,15 @@
 #! /bin/bash
 
-BUCKET=$1
-MOUNT_POINT=$2
+set -e
+set -u
+
+BUCKET="$1"
+MOUNT_POINT="$2"
 
 # Загрузка GeeseFS
 #wget -nv https://github.com/yandex-cloud/geesefs/releases/latest/download/geesefs-linux-amd64 -O /usr/local/sbin/geesefs
 wget -nv https://mycop1.website.yandexcloud.net/utils/geesefs-linux-amd64 -O /usr/local/sbin/geesefs
-chmod a+rwx /usr/local/sbin/geesefs
+chmod 755 /usr/local/sbin/geesefs
 mkdir -p "${MOUNT_POINT}"
 
 # Подготовка скрипта, выполняющегося при каждой загрузке
