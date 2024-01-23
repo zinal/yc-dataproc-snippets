@@ -14,6 +14,7 @@ YC_BUCKET=mzinal-dproc1
 YC_BUCKET_WH=mzinal-wh1
 YC_SA=dp1
 YC_MS_URI='thrift://ms1.zonne:9083'
+YC_LOGGROUP_ID=e23itcj83v2r9o51llld
 YC_DDB_LOCKBOX=e6qbeaqhak245qj9ak2c
 YC_DDB_ENDPOINT='https://docapi.serverless.yandexcloud.net/ru-central1/b1g3o4minpkuh10pd2rj/etnfjib1gmua6mvvgdcl/'
 
@@ -26,6 +27,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --version ${YC_VERSION} --ui-proxy \
   --services yarn,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
+  --log-group-id ${YC_LOGGROUP_ID} \
   --subcluster name="master",role='masternode',resource-preset='m3-c4-m32',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="static",role='computenode',resource-preset='m3-c16-m128',preemptible=false,disk-type='network-ssd',disk-size=200,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
   --subcluster name="dynamic",role='computenode',resource-preset='m3-c16-m128',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=9,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
