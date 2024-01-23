@@ -6,6 +6,11 @@
 #  * бакет Object Storage,
 #  * сервисный аккаунт с доступом к бакету,
 #  * кластер Data Proc с сервисом Hive Metastore
+#
+# Зависимости:
+#  * файлы jq.gz, yq.gz, geesefs-linux-amd64 в бакете mycop1 (https://mycop1.website.yandexcloud.net/utils/...)
+#  * скрипты инициализации init_geesefs.sh, init_nodelabels.sh в каталоге scripts основного бакета
+#  * созданная БД YDB Serverless, сервисная учетная запись и ключ от неё в Lockbox
 
 YC_VERSION=2.1
 YC_ZONE=ru-central1-d
@@ -52,7 +57,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
-  --property spark:spark.jars=/s3data/jars/yc-delta23-multi-dp21-1.1-fatjar.jar \
+  --property spark:spark.jars=/s3data/jars/yc-delta23-multi-dp21-1.1-fatjar.jar,/s3data/jars/ydb-spark-connector-1.0-SNAPSHOT.jar \
   --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
   --property spark:spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
