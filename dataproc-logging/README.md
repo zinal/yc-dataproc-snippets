@@ -14,49 +14,7 @@
 
 Ниже приведены рецепты некоторых типовых фильтров для отбора данных о функционировании компонентов Data Proc и о выполнении заданий. Предполагаем, что `mzinal-dataproc1` - это название используемой группы логирования.
 
-### 1.1. Инициализация кластера и его узлов
-
-Логи работы сервиса `cloud-init`, осуществляющего инициализацию узлов кластера Data Proc, на конкретном узле кластера:
-
-```bash
-yc logging read mzinal-dataproc1 \
-  --filter 'log_type: cloud-init AND hostname: "rc1d-dataproc-g-808029-ymyh.mdb.yandexcloud.net"'
-```
-
-Логи работы скриптов инициализации на конкретном узле кластера:
-
-```bash
-yc logging read mzinal-dataproc1 \
-  --filter 'log_type: yandex-dataproc-init-actions AND hostname: "rc1d-dataproc-g-808029-omek.mdb.yandexcloud.net"'
-```
-
-### 1.2. Логи YARN
-
-Логи ресурсного менеджера YARN (диагностика ситуаций вида "задание не запускается", "задание не получает нужного количества ресурсов"):
-
-```bash
-yc logging read mzinal-dataproc1 --since 08:50:00 --until 10:20:00 \
-  --filter 'log_type: "hadoop-yarn-resourcemanager"'
-```
-
-Логи менеджера узла YARN (диагностика аварийных завершений заданий):
-
-```bash
-yc logging read mzinal-dataproc1 --since 08:50:00 --until 10:20:00 \
-  --filter 'log_type: "hadoop-yarn-nodemanager" AND hostname: "rc1d-dataproc-g-808029-evyc.mdb.yandexcloud.net"'
-```
-
-### 1.3. Системные логи (syslog)
-
-Записи, поступающие в `syslog` на конкретном узле кластера (обычно нужно при сборе данных на мастер-узле):
-
-```bash
-yc logging read mzinal-dataproc1 \
-  --filter 'log_type: syslog AND hostname: "rc1d-dataproc-m-ici2e8n3pni3dwby.mdb.yandexcloud.net"' \
-  --since 2024-01-23T08:00:00Z --limit 1000000
-```
-
-### 1.4. Логи контейнеров YARN
+### 1.1. Логи контейнеров YARN
 
 Вывод приложений, запускаемых в контейнерах YARN, включая задания Spark, фиксируются в виде событий Cloud Logging с установленным признаком `log_type: containers`. Вывод можно дополнительно отфильтровать по следуюшим атрибутам:
 
@@ -77,7 +35,23 @@ yc logging read mzinal-dataproc1 \
   --since 2024-01-23T10:00:00Z --limit 1000000
 ```
 
-### 1.5. Логи операций Zeppelin
+### 1.2. Системные логи YARN
+
+Логи ресурсного менеджера YARN (диагностика ситуаций вида "задание не запускается", "задание не получает нужного количества ресурсов"):
+
+```bash
+yc logging read mzinal-dataproc1 --since 08:50:00 --until 10:20:00 \
+  --filter 'log_type: "hadoop-yarn-resourcemanager"'
+```
+
+Логи менеджера узла YARN (диагностика аварийных завершений заданий):
+
+```bash
+yc logging read mzinal-dataproc1 --since 08:50:00 --until 10:20:00 \
+  --filter 'log_type: "hadoop-yarn-nodemanager" AND hostname: "rc1d-dataproc-g-808029-evyc.mdb.yandexcloud.net"'
+```
+
+### 1.3. Логи операций Zeppelin
 
 Логи выполнения операций в ноутбуках Zeppelin можно выгрузить с помощью следующей команды:
 
@@ -87,11 +61,45 @@ yc logging read mzinal-dataproc1 \
   --since 2024-01-23T08:00:00Z --limit 1000000
 ```
 
-yc logging read mzinal-dataproc1 --since 08:50:00 --until 10:20:00 --filter 'NOT log_type: "yandex-dataproc-agent" "syslog" "salt-minion" "containers" "livy-request" "zeppelin" "hadoop-yarn-resourcemanager" "hadoop-yarn-nodemanager" "yandex-dataproc-start" "cloud-init" "hadoop-yarn-timelineserver" "yandex-dataproc-init-actions"' --format json | less
+Логи Zeppelin не содержат привязки к конкретному выполняемому ноутбуку или заданию Spark, что делает работу с ними неудобной при наличии нескольких конкурентных пользователей Zeppelin.
 
-### 1.6. Логи Livy
+### 1.4. Логи Livy
 
+Логи компонента Apache Livy, используемого для удалённого запуска операций Spark (включая текущий вариант интеграции с Yandex Data Sphere), записываются в Yandex Cloud Logging с признаками `log_type: livy-request` (запросы к Livy) и `log_type: livy-out` (вывод Livy). При анализе работы заданий обычно нужен именно вывод Livy.
 
+Логи Livy не содержат информации о работе запускаемых через Livy заданий, эту информацию можно получить запросом к логам контейнеров YARN, как было описано выше.
+
+Пример запроса:
+
+```bash
+yc logging read mzinal-dataproc1 --limit 1000000 --filter 'log_type: livy-out' 
+```
+
+### 1.5. Системные логи (syslog)
+
+Записи, поступающие в `syslog` на конкретном узле кластера (обычно нужно при сборе данных на мастер-узле):
+
+```bash
+yc logging read mzinal-dataproc1 \
+  --filter 'log_type: syslog AND hostname: "rc1d-dataproc-m-ici2e8n3pni3dwby.mdb.yandexcloud.net"' \
+  --since 2024-01-23T08:00:00Z --limit 1000000
+```
+
+### 1.6. Инициализация кластера и его узлов
+
+Логи работы сервиса `cloud-init`, осуществляющего инициализацию узлов кластера Data Proc, на конкретном узле кластера:
+
+```bash
+yc logging read mzinal-dataproc1 \
+  --filter 'log_type: cloud-init AND hostname: "rc1d-dataproc-g-808029-ymyh.mdb.yandexcloud.net"'
+```
+
+Логи работы скриптов инициализации на конкретном узле кластера:
+
+```bash
+yc logging read mzinal-dataproc1 \
+  --filter 'log_type: yandex-dataproc-init-actions AND hostname: "rc1d-dataproc-g-808029-omek.mdb.yandexcloud.net"'
+```
 
 ## 2. События Spark
 
