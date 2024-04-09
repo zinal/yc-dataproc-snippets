@@ -10,6 +10,7 @@
 * [Настройка кластера Data Proc для работы с Apache Kafka](dataproc-kafka/)
 * [Использование автоскейлинга в заданиях Spark](dataproc-scaling/)
 * [Управление дополнительными компонентами Python](dataproc-python-repo/)
+* [Автоматизация настройки хранения ноутбуков Zeppelin в Object Storage](dataproc-zeppelin/)
 * [Использование Delta Lake](https://github.com/yandex-cloud/yc-delta)
 
 Примеры вспомогательных скриптов и программ:
