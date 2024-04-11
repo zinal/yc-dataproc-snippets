@@ -1,11 +1,11 @@
 #! /bin/sh
 
-# Пример трёх кластеров для конкурентного доступа к данным в формате DeltaLake.
+# Пример кластера для конкурентного доступа к данным в формате DeltaLake.
 # Основной путь хранения установлен в каталог в S3.
 # Предполагается, что уже созданы
 #  * бакет Object Storage,
 #  * сервисный аккаунт с доступом к бакету,
-#  * кластер Data Proc с сервисом Hive Metastore
+#  * экземпляр Managed Metastore и DNS-имя для доступа к нему (ms1.zonne ниже).
 #
 # Зависимости:
 #  * файлы jq.gz, yq.gz, geesefs-linux-amd64 в бакете mycop1 (https://mycop1.website.yandexcloud.net/utils/...)
@@ -24,6 +24,9 @@ YC_DDB_LOCKBOX=e6qbeaqhak245qj9ak2c
 YC_DDB_ENDPOINT='https://docapi.serverless.yandexcloud.net/ru-central1/b1g3o4minpkuh10pd2rj/etnfjib1gmua6mvvgdcl/'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCrnvdmnBQL0klOXlVy3ElRXdkmQbTmNIWyGnVYBS2ygZYrYEMiXXIStCxlrxu+1WXDLTlqGa9AZGyyjTfpP3Jk= demo@gw1" >ssh-keys.tmp
+
+# для присвоения группы безопасности добавьте опцию:
+#   --security-group-ids <sg-id>
 
 YC_CLUSTER=delta-1
 yc dataproc cluster create ${YC_CLUSTER} \
