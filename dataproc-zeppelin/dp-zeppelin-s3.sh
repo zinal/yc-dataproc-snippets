@@ -5,7 +5,7 @@
 # Предполагается, что уже созданы
 #  * бакет Object Storage,
 #  * сервисный аккаунт с доступом к бакету,
-#  * кластер Data Proc с сервисом Hive Metastore
+#  * экземпляр Managed Metastore и DNS-имя для доступа к нему (ms1.zonne в примере ниже)
 
 # https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/NodeLabel.html
 
