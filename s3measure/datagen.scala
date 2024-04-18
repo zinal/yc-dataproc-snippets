@@ -2,10 +2,12 @@ import org.apache.spark.sql.types._
 
 sc.setLogLevel("INFO")
 
-val SYNTHETICS_OUTPUT_PATH = "s3a://dproc-zeppelin/s3measure/INPUT/input_wide/"
-val numPart = 200
+//val SYNTHETICS_OUTPUT_PATH = "s3a://dproc-zeppelin/s3measure/INPUT/input_wide/"
+val SYNTHETICS_OUTPUT_PATH = "hdfs:///user/ubuntu/zonne1/"
+
 //val rowsPerPart = 1000000 // 100Mb each file, 20G total
 val rowsPerPart = 100000 // 10Mb each file, 20G total
+val numPart = 200
 
 val df1 = 1.to(numPart).toDF("id_part").repartition(numPart)
 val df2 = df1.as[Int].mapPartitions(c=>1.to(rowsPerPart).toIterator)
