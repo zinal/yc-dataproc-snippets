@@ -1,3 +1,7 @@
+// hdfs dfs -rm -r /user/ubuntu/zonne1
+// hdfs dfs -mkdir /user/ubuntu/zonne1
+// spark-shell --conf spark.hadoop.mapreduce.fileoutputcommitter.cleanup.skipped=true -i test1.scala >job1.txt 2>&1
+
 import org.apache.spark.sql.types._
 
 sc.setLogLevel("INFO")
