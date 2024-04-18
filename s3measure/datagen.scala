@@ -4,7 +4,8 @@ sc.setLogLevel("INFO")
 
 val SYNTHETICS_OUTPUT_PATH = "s3a://dproc-zeppelin/s3measure/INPUT/input_wide/"
 val numPart = 200
-val rowsPerPart = 1000000 // 100Mb each file, 20G total
+//val rowsPerPart = 1000000 // 100Mb each file, 20G total
+val rowsPerPart = 100000 // 10Mb each file, 20G total
 
 val df1 = 1.to(numPart).toDF("id_part").repartition(numPart)
 val df2 = df1.as[Int].mapPartitions(c=>1.to(rowsPerPart).toIterator)
@@ -32,10 +33,6 @@ val df3 = df2.
   withColumn("str_3",col("str_1")).
   withColumn("str_4",col("str_1"))
 
-df3.write.
-  option("compression", "gzip").
-  mode("overwrite").
-  //csv(SYNTHETICS_OUTPUT_PATH)
-  parquet(SYNTHETICS_OUTPUT_PATH)  
+df3.write.mode("append").parquet(SYNTHETICS_OUTPUT_PATH)  
 
 System.exit(0)
