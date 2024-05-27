@@ -38,6 +38,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property core:fs.s3a.committer.threads=100 \
   --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
+  --property core:yarn.system-metrics-publisher.enabled=true \
   --property spark:spark.executor.memory=8g \
   --property spark:spark.sql.catalogImplementation=hive \
   --property spark:spark.hive.metastore.uris=${YC_MS_URI} \

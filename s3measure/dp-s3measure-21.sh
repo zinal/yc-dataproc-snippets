@@ -19,6 +19,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="static",role='computenode',resource-preset='c3-c32-m64',preemptible=false,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=8,max-hosts-count=8,subnet-name=${YC_SUBNET} \
   --ssh-public-keys-file ssh-keys.tmp \
+  --property core:yarn.system-metrics-publisher.enabled=true \
   --property spark:spark.hadoop.hive.metastore.uris=${YC_MS_URI} \
   --property spark:spark.sql.warehouse.dir=s3a://${YC_BUCKET}/wh \
   --property spark:spark.driver.extraJavaOptions='-XX:+UseG1GC' \
