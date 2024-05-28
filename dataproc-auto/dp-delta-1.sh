@@ -17,7 +17,7 @@ YC_ZONE=ru-central1-d
 YC_SUBNET=zinal-ru-central1-d
 YC_BUCKET=mzinal-dproc1
 YC_BUCKET_WH=mzinal-wh1
-YC_SA=dp1
+YC_SA=zinal-dp1
 YC_MS_URI='thrift://ms1.zonne:9083'
 YC_LOGGROUP_ID=e23itcj83v2r9o51llld
 YC_DDB_LOCKBOX=e6qbeaqhak245qj9ak2c
@@ -49,7 +49,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property capacity-scheduler:yarn.scheduler.capacity.root.default.accessible-node-labels.SPARKAM.capacity=100 \
   --property capacity-scheduler:yarn.scheduler.capacity.resource-calculator=org.apache.hadoop.yarn.util.resource.DominantResourceCalculator \
   --property spark:spark.yarn.am.nodeLabelExpression=SPARKAM \
-  --property livy:livy.spark.deploy-mode=cluster \
+  --property livy:livy.spark.deploy-mode=client \
   --property core:fs.s3a.committer.threads=100 \
   --property core:fs.s3a.connection.maximum=1000 \
   --property core:mapreduce.outputcommitter.factory.scheme.s3a=org.apache.hadoop.fs.s3a.commit.S3ACommitterFactory \
