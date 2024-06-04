@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# Пример автомасштабируемого кластера для конкурентного доступа к данным в формате DeltaLake.
+# Пример автомасштабируемого кластера для доступа к данным в формате DeltaLake.
 # Основной путь хранения установлен в каталог в S3.
 # Предполагается, что уже созданы
 #  * бакет Object Storage,
@@ -8,10 +8,9 @@
 #  * экземпляр Managed Metastore и DNS-имя для доступа к нему (ms1.zonne ниже).
 #
 # Зависимости:
-#  * файлы jq.gz, yq.gz, geesefs-linux-amd64 в бакете mycop1 (https://mycop1.website.yandexcloud.net/utils/...)
-#  * скрипты инициализации init_geesefs.sh, init_nodelabels.sh в каталоге scripts основного бакета
-#  * созданная БД YDB Serverless, сервисная учетная запись и ключ от неё в Lockbox
-#  * лог-группа
+#  * файлы jq.gz, yq.gz в бакете mycop1 (https://mycop1.website.yandexcloud.net/utils/...)
+#  * скрипт инициализации init_nodelabels.sh в каталоге scripts основного бакета
+#  * созданная лог-группа
 
 YC_VERSION=2.1
 YC_ZONE=ru-central1-d
@@ -21,20 +20,18 @@ YC_BUCKET_WH=mzinal-wh1
 YC_SA=zinal-dp1
 YC_MS_URI='thrift://ms1.zonne:9083'
 YC_LOGGROUP_ID=e23itcj83v2r9o51llld
-YC_DDB_LOCKBOX=e6qbeaqhak245qj9ak2c
-YC_DDB_ENDPOINT='https://docapi.serverless.yandexcloud.net/ru-central1/b1g3o4minpkuh10pd2rj/etnfjib1gmua6mvvgdcl/'
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCrnvdmnBQL0klOXlVy3ElRXdkmQbTmNIWyGnVYBS2ygZYrYEMiXXIStCxlrxu+1WXDLTlqGa9AZGyyjTfpP3Jk= demo@gw1" >ssh-keys.tmp
 
 # для присвоения группы безопасности добавьте опцию:
 #   --security-group-ids <sg-id>
 
-YC_CLUSTER=delta-1
+YC_CLUSTER=delta-2
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
   --version ${YC_VERSION} --ui-proxy \
-  --services yarn,spark,livy,zeppelin \
+  --services yarn,spark,livy \
   --bucket ${YC_BUCKET} \
   --log-group-id ${YC_LOGGROUP_ID} \
   --subcluster name="master",role='masternode',resource-preset='m3-c4-m32',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
@@ -62,14 +59,10 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
-  --property spark:spark.jars=/s3data/jars/yc-delta23-multi-dp21-1.1-fatjar.jar,/s3data/jars/ydb-spark-connector-1.0-SNAPSHOT.jar \
+  --property spark:spark.jars=s3a://${YC_BUCKET}/jars/yc-delta23-multi-dp21-1.1-fatjar.jar,s3a://${YC_BUCKET}/jars/ydb-spark-connector-1.1.jar \
   --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  --property spark:spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
-  --property spark:spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=${YC_DDB_ENDPOINT} \
-  --property spark:spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=${YC_DDB_LOCKBOX} \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --initialization-action 'uri=s3a://'${YC_BUCKET}'/scripts/init_geesefs.sh,args=['${YC_BUCKET}',/s3data]' \
   --initialization-action 'uri=s3a://'${YC_BUCKET}'/scripts/init_nodelabels.sh,args=static' \
   --async
