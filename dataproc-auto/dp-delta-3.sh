@@ -13,7 +13,7 @@
 #  * созданная БД YDB Serverless, сервисная учетная запись и ключ от неё в Lockbox
 #  * лог-группа
 
-YC_VERSION=2.1
+YC_VERSION=2.2
 YC_ZONE=ru-central1-d
 YC_SUBNET=zinal-ru-central1-d
 YC_BUCKET=mzinal-dproc1
@@ -29,12 +29,12 @@ echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBC
 # для присвоения группы безопасности добавьте опцию:
 #   --security-group-ids <sg-id>
 
-YC_CLUSTER=delta-1
+YC_CLUSTER=delta-3
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
   --service-account-name ${YC_SA} \
   --version ${YC_VERSION} --ui-proxy \
-  --services yarn,spark,livy,zeppelin \
+  --services yarn,spark,livy \
   --bucket ${YC_BUCKET} \
   --log-group-id ${YC_LOGGROUP_ID} \
   --subcluster name="master",role='masternode',resource-preset='m3-c4-m32',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
@@ -62,7 +62,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
-  --property spark:spark.jars=s3a://${YC_BUCKET}/jars/yc-delta23-multi-dp21-1.2-fatjar.jar,s3a://${YC_BUCKET}/jars/ydb-spark-connector-1.1.jar \
+  --property spark:spark.jars=s3a://${YC_BUCKET}/jars/yc-delta32-multi-dp22-1.2-fatjar.jar,s3a://${YC_BUCKET}/jars/ydb-spark-connector-1.1.jar \
   --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
   --property spark:spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
