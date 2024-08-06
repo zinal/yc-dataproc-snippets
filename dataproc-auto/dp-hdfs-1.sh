@@ -12,8 +12,6 @@ YC_SUBNET=zinal-ru-central1-d
 YC_BUCKET=mzinal-dproc1
 YC_SA=zinal-dp1
 YC_MS_URI='thrift://10.129.0.18:9083'
-YC_DDB_LOCKBOX=e6q7eqfqs962m6g9rs62
-YC_DDB_ENDPOINT=https://docapi.serverless.yandexcloud.net/ru-central1/b1gfvslmokutuvt2g019/etnac7v7lqqiflor0sem
 
 echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCrnvdmnBQL0klOXlVy3ElRXdkmQbTmNIWyGnVYBS2ygZYrYEMiXXIStCxlrxu+1WXDLTlqGa9AZGyyjTfpP3Jk= demo@gw1" >ssh-keys.tmp
 
@@ -37,12 +35,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
-  --property spark:spark.jars=/s3data/jars/yc-delta-multi-dp21-1.0-fatjar.jar \
-  --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
-  --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  --property spark:spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
-  --property spark:spark.io.delta.storage.S3DynamoDBLogStore.ddb.endpoint=${YC_DDB_ENDPOINT} \
-  --property spark:spark.io.delta.storage.S3DynamoDBLogStore.ddb.lockbox=${YC_DDB_LOCKBOX} \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
+  --initialization-action 'uri=s3a://'${YC_BUCKET}'/scripts/init_geesefs.sh,args=['${YC_BUCKET}',/s3data]' \
   --async

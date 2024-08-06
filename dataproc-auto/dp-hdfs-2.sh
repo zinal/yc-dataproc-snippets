@@ -37,4 +37,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.kryoserializer.buffer.max=256m \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
+  --initialization-action 'uri=s3a://'${YC_BUCKET}'/scripts/init_geesefs.sh,args=['${YC_BUCKET}',/s3data]' \
   --async
