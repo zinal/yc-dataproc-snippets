@@ -35,7 +35,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --bucket ${YC_BUCKET} \
   --log-group-id ${YC_LOGGROUP_ID} \
   --subcluster name="master",role='masternode',resource-preset='m3-c4-m32',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="static",role='datanode',resource-preset='m3-c16-m128',preemptible=false,disk-type='network-ssd',disk-size=500,hosts-count=1,max-hosts-count=1,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
+  --subcluster name="static",role='datanode',resource-preset='m3-c16-m128',preemptible=false,disk-type='network-ssd',disk-size=500,hosts-count=1,subnet-name=${YC_SUBNET} \
   --subcluster name="dynamic",role='computenode',resource-preset='m3-c16-m128',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=1,max-hosts-count=9,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property yarn:yarn.node-labels.fs-store.root-dir=file:///hadoop/yarn/node-labels \
