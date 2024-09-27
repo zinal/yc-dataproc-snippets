@@ -9,13 +9,13 @@
 
 YC_CLUSTER=normal-3
 YC_VERSION=2.1
-YC_ZONE=ru-central1-c
-YC_SUBNET=default-ru-central1-c
-YC_BUCKET=dproc-wh
-YC_SA=dp1
-YC_MS_URI='thrift://rc1c-dataproc-m-yempltyygr9d8pjh.mdb.yandexcloud.net:9083'
+YC_ZONE=ru-central1-d
+YC_SUBNET=zinal-ru-central1-d
+YC_BUCKET=mzinal-dproc1
+YC_SA=zinal-dp1
+YC_MS_URI='thrift://10.129.0.5:9083'
 
-echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKbQbtWaYC/XW5efMnhHr0G+6GEl/pCpUmg9+/DpYXYAdqdB67N1EafbsS6JJiI97B+48vwWMJ0iRQ3Ysihg1jk= demo@gw1" >ssh-keys.tmp
+echo "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCrnvdmnBQL0klOXlVy3ElRXdkmQbTmNIWyGnVYBS2ygZYrYEMiXXIStCxlrxu+1WXDLTlqGa9AZGyyjTfpP3Jk= demo@gw1" >ssh-keys.tmp
 
 yc dataproc cluster create ${YC_CLUSTER} \
   --zone ${YC_ZONE} \
@@ -24,7 +24,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --services yarn,spark,livy,zeppelin \
   --bucket ${YC_BUCKET} \
   --subcluster name="master",role='masternode',resource-preset='s2.medium',disk-type='network-ssd',disk-size=100,hosts-count=1,subnet-name=${YC_SUBNET} \
-  --subcluster name="compute",role='computenode',resource-preset='m3-c8-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=6,max-hosts-count=6,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
+  --subcluster name="compute",role='computenode',resource-preset='m3-c8-m64',preemptible=true,disk-type='network-ssd-nonreplicated',disk-size=186,hosts-count=5,max-hosts-count=5,subnet-name=${YC_SUBNET},autoscaling-decommission-timeout=3600 \
   --ssh-public-keys-file ssh-keys.tmp \
   --property core:fs.s3a.committer.name=directory \
   --property core:fs.s3a.committer.staging.conflict-mode=append \
@@ -44,5 +44,5 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.executor.extraJavaOptions='-XX:+UseG1GC' \
   --property spark:spark.sql.hive.metastore.sharedPrefixes=com.amazonaws,ru.yandex.cloud \
   --property spark:spark.sql.addPartitionInBatch.size=1000 \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_normal.sh" \
-  --initialization-action "uri=s3a://${YC_BUCKET}/init-scripts/init_geesefs.sh,args=[${YC_BUCKET},/s3data]"
+  --initialization-action "uri=s3a://${YC_BUCKET}/scripts/init_logging.sh" \
+  --async

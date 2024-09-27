@@ -19,7 +19,7 @@ YC_SUBNET=zinal-ru-central1-d
 YC_BUCKET=mzinal-dproc1
 YC_BUCKET_WH=mzinal-wh1
 YC_SA=zinal-dp1
-YC_MS_URI='thrift://ms1.zonne:9083'
+YC_MS_URI='thrift://10.129.0.5:9083'
 YC_LOGGROUP_ID=e23itcj83v2r9o51llld
 YC_DDB_LOCKBOX=e6qbeaqhak245qj9ak2c
 YC_DDB_ENDPOINT='https://docapi.serverless.yandexcloud.net/ru-central1/b1g3o4minpkuh10pd2rj/etnfjib1gmua6mvvgdcl/'
@@ -62,7 +62,7 @@ yc dataproc cluster create ${YC_CLUSTER} \
   --property spark:spark.serializer=org.apache.spark.serializer.KryoSerializer \
   --property spark:spark.kryoserializer.buffer=32m \
   --property spark:spark.kryoserializer.buffer.max=256m \
-  --property spark:spark.jars=s3a://${YC_BUCKET}/jars/yc-delta23-multi-dp21-1.2-fatjar.jar,s3a://${YC_BUCKET}/jars/ydb-spark-connector-1.1.jar \
+  --property spark:spark.jars=s3a://${YC_BUCKET}/jars/yc-delta23-multi-dp21-1.3-fatjar.jar \
   --property spark:spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --property spark:spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
   --property spark:spark.delta.logStore.s3a.impl=ru.yandex.cloud.custom.delta.YcS3YdbLogStore \
